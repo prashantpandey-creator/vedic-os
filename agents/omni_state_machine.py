@@ -70,7 +70,9 @@ The following is the real-time structure of the Git repository/codebase as it ex
 =========================================
 
 You must accomplish the user's intent autonomously.
-First, write out a detailed, verbose thought process explaining your reasoning. Then, output your chosen action strictly inside a ```json block.
+First, write out a detailed, verbose thought process explaining your reasoning. 
+Second, you MUST write a "CRITIQUE:" section where you aggressively challenge your own plan. Ask yourself: "What could go wrong? Is there a safer way? Am I hallucinating a file path?"
+Finally, after your critique, output your chosen action strictly inside a ```json block.
 {registry.get_system_prompt_addition()}
 """
 

@@ -38,7 +38,31 @@ def apply_search_replace(file_path, search_block, replace_block, workspace_dir="
     new_code = old_code.replace(search_block, replace_block, 1)
     with open(full_path, "w", encoding="utf-8") as f:
         f.write(new_code)
-    
+        
+    # --- SELF-HEALING SYNTAX CHECKER ---
+    # If it's a python file, ensure we didn't just break the AST.
+    if full_path.endswith(".py"):
+        import subprocess
+        try:
+            res = subprocess.run(["python3", "-m", "py_compile", full_path], capture_output=True, text=True)
+            if res.returncode != 0:
+                with open(full_path, "w", encoding="utf-8") as f:
+                    f.write(old_code)
+                raise ValueError(f"🚨 SYNTAX ERROR PREVENTED! Your edit introduced a syntax error:\n{res.stderr}\nThe edit was REVERTED. Please carefully review your python syntax and try again.")
+        except FileNotFoundError:
+            pass
+            
+    elif full_path.endswith(".js") or full_path.endswith(".jsx"):
+        import subprocess
+        try:
+            res = subprocess.run(["node", "--check", full_path], capture_output=True, text=True)
+            if res.returncode != 0:
+                with open(full_path, "w", encoding="utf-8") as f:
+                    f.write(old_code)
+                raise ValueError(f"🚨 SYNTAX ERROR PREVENTED! Your edit introduced a JS syntax error:\n{res.stderr}\nThe edit was REVERTED. Please review your syntax.")
+        except FileNotFoundError:
+            pass
+            
     # Always return a diff string (never None)
     diff = list(difflib.unified_diff(
         old_code.splitlines(keepends=True),

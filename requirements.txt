@@ -1,2 +1,4 @@
 streamlit>=1.30.0
 requests>=2.31.0
+orjson>=3.9.15
+uvloop>=0.19.0

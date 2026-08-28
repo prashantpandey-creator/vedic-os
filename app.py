@@ -806,7 +806,7 @@ with tab4:
         # Render previous steps
         for log in st.session_state.omni_log:
             with st.expander(f"🦅 Step {log['step']}: {log.get('type', 'Action').upper()}", expanded=(log['step'] == st.session_state.omni_step - 1)):
-                if 'raw' in log: st.code(log['raw'], language="json")
+                if 'raw' in log: st.markdown(log['raw'])
                 
                 if log.get('type') == 'command':
                     st.markdown(f"**💻 Terminal Output (Command: `{log['cmd']}`)**")
