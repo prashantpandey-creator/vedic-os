@@ -16,22 +16,22 @@ class ToolRegistry:
         return """
 Available Tools (Choose ONE per response):
 
-1. run_command (NOTE: You have access to modern Rust binaries: 'rg' for searching code, 'fdfind' for finding files, and 'batcat' for reading.)
+1. run_command (NOTE: You have access to modern Rust binaries: 'rg', 'fdfind', 'batcat'. WARNING: Each command runs in a fresh shell. You cannot 'cd' and expect it to persist to the next step. Chain commands with &&.)
 {"thought": "...", "action": "run_command", "command": "npm test"}
 
 2. edit_file
 {"thought": "...", "action": "edit_file", "file": "path", "search": "old text", "replace": "new text"}
 
-3. create_artifact (Generate permanent reports, plans, or full files)
+4. create_artifact (Generate permanent reports, plans, or full files)
 {"thought": "...", "action": "create_artifact", "title": "ArchitecturePlan", "content": "# Markdown Content..."}
 
-4. invoke_subagent (Spawn a fast background agent to do research or recursive tasks)
+5. invoke_subagent (Spawn a fast background agent to do research or recursive tasks)
 {"thought": "...", "action": "invoke_subagent", "role": "researcher", "task": "Find all API routes returning 404"}
 
-5. create_pull_request (Push local edits to a new branch and raise a PR on GitHub)
+6. create_pull_request (Push local edits to a new branch and raise a PR on GitHub)
 {"thought": "...", "action": "create_pull_request", "branch_name": "fix-auth-bug", "title": "Fix Auth Bug", "body": "Fixed the token expiration issue."}
 
-6. done
+7. done
 {"thought": "...", "action": "done"}
 """
 
@@ -42,6 +42,16 @@ Available Tools (Choose ONE per response):
             cmd = action_data.get("command", "")
             output = self.terminal.execute(cmd)
             return {"type": "command", "cmd": cmd, "output": output, "msg": f"Command Executed.\\nOutput:\\n```\\n{output}\\n```"}
+            
+        elif action == "create_file":
+            filepath = action_data.get("file")
+            content = action_data.get("content", "")
+            import os
+            full_path = os.path.join(self.workspace_dir, filepath)
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            with open(full_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            return {"type": "edit", "file": filepath, "diff": "File created.", "msg": f"File {filepath} created successfully."}
             
         elif action == "edit_file":
             filepath = action_data.get("file")

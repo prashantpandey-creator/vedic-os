@@ -53,7 +53,7 @@ class TerminalEngine:
         try:
             result = subprocess.run(
                 cmd, shell=True, cwd=self.cwd,
-                capture_output=True, text=True, timeout=60
+                capture_output=True, text=True, timeout=60, errors="replace"
             )
             output = result.stdout + "\n" + result.stderr
             output = output.strip()
