@@ -124,7 +124,7 @@ def generate_next_thought(coder_model, messages, step_placeholder):
                 chunk = orjson.loads(line)
                 if "message" in chunk and "content" in chunk["message"]:
                     raw_response += chunk["message"]["content"]
-                    step_placeholder.markdown(f"**💭 Agent Thoughts:**\n{raw_response}▌")
+                    if step_placeholder: step_placeholder.markdown(f"**💭 Agent Thoughts:**\n{raw_response}▌")
                     
         return raw_response
     except Exception as e:
