@@ -6,15 +6,12 @@ with open("/Users/badenath/projects/local-llm-ui/agents/omni_state_machine.py", 
 
 import re
 
-# Find the exact block we want to replace
 pattern = re.compile(r"def init_omni_loop.*?evict_model\(meditate_model\)", re.DOTALL)
 
 new_block = """def init_omni_loop(intent_prompt, meditate_model, coder_model, workspace_dir=".", status_container=None):
     if status_container:
         status_container.info("📂 Scanning filesystem and extracting active codebase...")
         
-    # OPTIMIZATION 1: Cut max chars in half (120k -> 60k). Reduces prompt context to ~15k tokens.
-    # This halves the time-to-first-token for Mamba.
     repo_text = ingest_repository_to_text(workspace_dir=workspace_dir, max_chars=60000)
     
     file_count = repo_text.count("--- FILE:")
@@ -23,7 +20,6 @@ new_block = """def init_omni_loop(intent_prompt, meditate_model, coder_model, wo
     if status_container:
         status_container.info(f"🐍 Passed {file_count} files ({char_count} chars) to Mamba model `{meditate_model}`. Synthesizing blueprint...")
         
-    # OPTIMIZATION 2: Demand extreme brevity. Generation of tokens is the slowest part.
     meditate_payload = {
         "model": meditate_model,
         "messages": [
@@ -36,7 +32,6 @@ new_block = """def init_omni_loop(intent_prompt, meditate_model, coder_model, wo
     
     blueprint = ""
     try:
-        # OPTIMIZATION 3: Stream the output so the user sees progress instantly instead of waiting.
         res = requests.post(f"{OLLAMA_URL}/api/chat", json=meditate_payload, stream=True)
         for line in res.iter_lines():
             if line:
@@ -55,9 +50,9 @@ new_block = """def init_omni_loop(intent_prompt, meditate_model, coder_model, wo
     evict_model(meditate_model)"""
 
 if pattern.search(content):
-    content = pattern.sub(new_block, content)
+    content = pattern.sub(new_block.replace("\\n", "\\\\n"), content)
     with open("/Users/badenath/projects/local-llm-ui/agents/omni_state_machine.py", "w") as f:
-        f.write(content)
-    print("Successfully optimized Mamba ingestion and enabled streaming.")
+        f.write(content.replace("\\\\n", "\\n"))
+    print("Fixed syntax error in omni_state_machine.py.")
 else:
     print("Could not find block to replace.")

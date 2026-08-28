@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  vedic-omni-agent:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      # Use host.docker.internal to allow the container to reach Ollama on the host machine
+      - OLLAMA_URL=http://host.docker.internal:11434
+    volumes:
+      # Mount the current directory into the container's workspace so the agent can edit files
+      - .:/app/workspace
+    restart: unless-stopped

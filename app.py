@@ -15,18 +15,168 @@ st.set_page_config(page_title="Vedic Framework OS", page_icon="🪷", layout="wi
 # Custom CSS for glowing dark mode
 st.markdown("""
 <style>
-    .stApp { background-color: #0d1117; color: #c9d1d9; }
-    .stTextInput>div>div>input { background-color: #161b22; color: #c9d1d9; }
-    .stSelectbox>div>div>div { background-color: #161b22; color: #c9d1d9; }
-    .stDeployButton {display:none;}
-    [data-testid="stHeader"] {background-color: transparent;}
-    [data-testid="stSidebar"] { background-color: #161b22; border-right: 1px solid #30363d; }
-    .model-card {
-        background-color: #21262d; border: 1px solid #30363d; border-radius: 8px; padding: 15px; margin-bottom: 10px;
+    /* Glassmorphism Dark Theme */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
     }
-    .model-title { color: #58a6ff; font-weight: bold; font-size: 1.1em; }
-    .model-stat { color: #8b949e; font-size: 0.9em; }
-    .status-active { color: #3fb950; font-weight: bold; }
+
+    /* Background - Deep sophisticated gradient */
+    .stApp {
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        background-attachment: fixed;
+        color: #e2e8f0;
+    }
+
+    /* Sidebar - Frosted Glass */
+    [data-testid="stSidebar"] {
+        background-color: rgba(15, 23, 42, 0.4) !important;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Headers and Topbar */
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+    }
+
+    /* Inputs, TextAreas, SelectBoxes - Glassy */
+    .stTextInput>div>div>input, 
+    .stTextArea>div>div>textarea,
+    .stSelectbox>div>div>div {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #e2e8f0 !important;
+        border-radius: 12px !important;
+        transition: all 0.3s ease;
+    }
+
+    .stTextInput>div>div>input:focus, 
+    .stTextArea>div>div>textarea:focus,
+    .stSelectbox>div>div>div:focus {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(99, 102, 241, 0.5) !important;
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.2) !important;
+    }
+
+    /* Chat inputs */
+    .stChatInputContainer {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+    }
+    
+    /* Info boxes and Warnings - Glassy variants */
+    .stAlert {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
+        color: #e2e8f0 !important;
+    }
+
+    /* Buttons - Sleek Glowing */
+    .stButton>button {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(10px);
+        border-radius: 10px !important;
+        color: #e2e8f0 !important;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background: rgba(99, 102, 241, 0.2) !important;
+        border-color: rgba(99, 102, 241, 0.5) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(99, 102, 241, 0.2);
+    }
+    .stButton>button:active {
+        transform: translateY(0px);
+    }
+    
+    /* Primary buttons */
+    .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.6) 0%, rgba(139, 92, 246, 0.6) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+    .stButton>button[kind="primary"]:hover {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.8) 0%, rgba(139, 92, 246, 0.8) 100%) !important;
+        box-shadow: 0 5px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    /* Containers and Expanders - Glass Cards */
+    [data-testid="stExpander"] {
+        background-color: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 12px !important;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+    [data-testid="stExpander"] > div[role="button"] {
+        background-color: rgba(255, 255, 255, 0.02) !important;
+    }
+
+    /* Code blocks */
+    pre {
+        background-color: rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(5px);
+    }
+
+    /* Model Cards (Custom class) */
+    .model-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 15px; 
+        margin-bottom: 10px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: transform 0.3s ease;
+    }
+    .model-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(99, 102, 241, 0.3);
+    }
+    .model-title { color: #818cf8; font-weight: 600; font-size: 1.1em; }
+    .model-stat { color: #94a3b8; font-size: 0.9em; }
+    .status-active { color: #4ade80; font-weight: 600; }
+
+    /* Tabs Styling - Minimal Pill design */
+    [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: rgba(0, 0, 0, 0.2);
+        padding: 6px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    [data-baseweb="tab"] {
+        background-color: transparent !important;
+        border-radius: 10px !important;
+        border: none !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+    }
+    [data-baseweb="tab"][aria-selected="true"] {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Hide annoying UI elements */
+    .stDeployButton {display:none;}
+    footer {visibility: hidden;}
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 </style>
 """, unsafe_allow_html=True)
 
@@ -43,11 +193,12 @@ st.sidebar.markdown("### Navigation")
 st.sidebar.info("Use the **4 tabs** above to move between stages of the Vedic AI Engine — from raw model chat to full autonomous terminal execution.")
 
 # ----------------- Main View -----------------
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "💬 Stage 1: Bare Model", 
     "🏗️ Stage 2: Sandbox Architect", 
     "🧬 Stage 3: Nidra Harness", 
-    "🦅 Stage 4: Omni-Agent"
+    "🦅 Stage 4: Omni-Agent",
+    "🧠 Model Manager"
 ])
 
 
@@ -354,12 +505,6 @@ def render_brain_importer(workspace_dir):
                 st.info("No Antigravity sessions found.")
 
 # ----------------- Main View -----------------
-tab1, tab2, tab3, tab4 = st.tabs([
-    "💬 Stage 1: Bare Model", 
-    "🏗️ Stage 2: Sandbox Architect", 
-    "🧬 Stage 3: Nidra Harness", 
-    "🦅 Stage 4: Omni-Agent"
-])
 
 
 # Sidebar globals used by Stage 1 chat and Stage 2 Architect
@@ -570,25 +715,24 @@ with tab4:
                     st.rerun()
             st.markdown("---")
 
-        if "suggested_intent" not in st.session_state:
-            st.session_state.suggested_intent = "Run 'npm test', find the failing tests, and fix the codebase."
+        if "omni_intent_val" not in st.session_state:
+            st.session_state.omni_intent_val = "Run 'npm test', find the failing tests, and fix the codebase."
             
         col_t1, col_t2 = st.columns([5, 1])
         with col_t1:
-            intent_prompt = st.text_area("What do you want the Omni-Agent to do?", value=st.session_state.suggested_intent, height=100)
+            intent_prompt = st.text_area("What do you want the Omni-Agent to do?", key="omni_intent_val", height=100)
         with col_t2:
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("💡 Auto-Suggest"):
                 with st.spinner("Analyzing repo..."):
                     context_data = ""
-                    for fname in ["README.md", "PROJECT_MIND.md"]:
+                    for fname in ["README.md", "PROJECT_MIND.md", "package.json"]:
                         fpath = os.path.join(workspace_dir, fname)
                         if os.path.exists(fpath):
-                            with open(fpath, "r") as mf:
+                            with open(fpath, "r", errors="ignore") as mf:
                                 context_data += f"\n--- {fname} ---\n" + mf.read()[:5000]
                     
                     if not context_data.strip():
-                        # Fallback to reading first 5 files
                         try:
                             files = [f for f in os.listdir(workspace_dir) if os.path.isfile(os.path.join(workspace_dir, f)) and not f.startswith(".")]
                             for f in files[:5]:
@@ -606,13 +750,15 @@ with tab4:
                             {"role": "user", "content": context_data[-12000:]}
                         ],
                         "stream": False,
-                        "options": {"num_ctx": 4096, "temperature": 0.7}
+                        "options": {"num_ctx": 4096, "temperature": 0.8}
                     }
                     try:
                         res = requests.post(f"{OLLAMA_URL}/api/chat", json=payload).json()
                         suggestion = res.get("message", {}).get("content", "").strip()
+                        # Clean up markdown formatting if the LLM ignores instructions
+                        suggestion = suggestion.replace("**", "").replace("*", "").replace("`", "")
                         if suggestion:
-                            st.session_state.suggested_intent = suggestion
+                            st.session_state.omni_intent_val = suggestion
                             st.rerun()
                     except Exception as e:
                         st.error(f"Failed to auto-suggest: {e}")
@@ -678,6 +824,9 @@ with tab4:
                 elif log.get('type') == 'github_pr':
                     st.success(f"🐙 **Pull Request Raised!**")
                     st.markdown(f"[View PR on GitHub]({log['url']})")
+                elif log.get('type') == 'blueprint':
+                    st.info("🐍 **Codebase Blueprint Generated:**")
+                    st.markdown(log['blueprint'])
 
         # Handle current state
         if st.session_state.omni_state == "GENERATING":
@@ -704,7 +853,11 @@ with tab4:
                     messages[0]["content"] += "\n\nPRIOR PHASE SUMMARIES (your own earlier work):\n" + prior_context
                     
                     st.session_state.omni_messages = messages
-                    st.session_state.omni_log = []
+                    st.session_state.omni_log = [{
+                        "step": 0,
+                        "type": "blueprint",
+                        "blueprint": blueprint
+                    }]
                     st.session_state.omni_step = 1
                     st.session_state.action_history = []
                     st.session_state.phase = current_phase + 1
@@ -754,7 +907,9 @@ with tab4:
             
             if action == "done":
                 st.session_state.omni_state = "DONE"
-                append_vritti(st.session_state.intent_prompt, "Omni-Loop", "[PRAMANA] Done", workspace_dir=workspace_dir)
+                from core.checkpoint import build_phase_summary
+                summary = build_phase_summary(st.session_state.omni_log)
+                append_vritti(st.session_state.intent_prompt, "Omni-Loop", "[PRAMANA] Done", extra="**Marathon Session Summary:**\n" + summary, workspace_dir=workspace_dir)
                 st.rerun()
                 
             elif action == "run_command" and st.session_state.hitl_enabled:
@@ -817,14 +972,30 @@ with tab4:
                     st.rerun()
                     
         elif st.session_state.omni_state == "DONE":
-            st.success("🎉 Omni-Agent has completed the task!")
-            if st.button("Start New Task"):
-                if st.session_state.terminal: st.session_state.terminal.cleanup()
-                st.session_state.omni_state = "IDLE"
+            st.success("🎉 Agent is standing by.")
+            col_d1, col_d2 = st.columns(2)
+            with col_d1:
+                if st.button("Start Completely New Task"):
+                    if st.session_state.terminal: st.session_state.terminal.cleanup()
+                    from core.checkpoint import clear_checkpoints
+                    clear_checkpoints(workspace_dir)
+                    st.session_state.omni_state = "IDLE"
+                    # Wipe the intent to encourage fresh auto-suggest
+                    if "omni_intent_val" in st.session_state:
+                        del st.session_state["omni_intent_val"]
+                    st.rerun()
+            
+            # Allow conversational follow-ups without wiping context
+            st.markdown("---")
+            follow_up = st.chat_input("Ask a follow-up question or assign a new task...")
+            if follow_up:
+                st.session_state.omni_messages.append({"role": "user", "content": follow_up})
+                st.session_state.max_steps += 5 # Give it more steps to complete the follow-up
+                st.session_state.omni_state = "GENERATING"
                 st.rerun()
                 
         # The Steer / Interrupt Button
-        if st.session_state.omni_state != "DONE":
+        if st.session_state.omni_state in ["GENERATING", "AWAITING_APPROVAL"]:
             st.markdown("---")
             steer = st.chat_input("🚨 Intervene / Steer the Agent mid-loop...")
             if steer:
@@ -876,3 +1047,67 @@ with tab2:
                 language = "typescript" if f['filename'].endswith(".ts") or f['filename'].endswith(".tsx") else "javascript"
                 if f['filename'].endswith(".sh"): language = "bash"
                 st.code(f['code'], language=language)
+
+
+with tab5:
+    st.header("🧠 Local Model Manager")
+    st.markdown("Pull, delete, and manage your local Ollama models directly from this UI.")
+    
+    from core.ollama_api import pull_model, delete_model, evict_all_models
+    
+    col_m1, col_m2 = st.columns([2, 1])
+    
+    with col_m1:
+        st.subheader("📥 Download New Model")
+        new_model_name = st.text_input("Enter Ollama model name (e.g. `llama3.1:8b`, `qwen2.5:32b`)")
+        if st.button("Pull Model", type="primary"):
+            if new_model_name:
+                pull_box = st.empty()
+                pull_box.info(f"Downloading `{new_model_name}`... This may take a while.")
+                res = pull_model(new_model_name)
+                if res and res.status_code == 200:
+                    import json
+                    for line in res.iter_lines():
+                        if line:
+                            data = json.loads(line)
+                            status = data.get("status", "")
+                            if "total" in data and "completed" in data:
+                                pct = (data["completed"] / data["total"]) * 100
+                                pull_box.info(f"Downloading `{new_model_name}`: {pct:.1f}% - {status}")
+                            else:
+                                pull_box.info(f"Downloading `{new_model_name}`: {status}")
+                    pull_box.success(f"Successfully pulled `{new_model_name}`!")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    pull_box.error(f"Failed to pull `{new_model_name}`. Check your internet or Ollama connection.")
+            else:
+                st.warning("Please enter a model name.")
+                
+        st.markdown("---")
+        st.subheader("🧹 VRAM Management")
+        if st.button("Unload All Models from VRAM (Free Memory)"):
+            evict_all_models()
+            st.success("All models evicted from VRAM.")
+            time.sleep(1)
+            st.rerun()
+
+    with col_m2:
+        st.subheader("📦 Installed Models")
+        for m in models:
+            details = get_model_details(m)
+            if details:
+                size_gb = details.get("size", 0) / (1024**3)
+                param_size = details.get("details", {}).get("parameter_size", "Unknown")
+                quant = details.get("details", {}).get("quantization_level", "Unknown")
+                
+                with st.expander(f"🤖 {m} ({size_gb:.1f} GB)"):
+                    st.write(f"**Parameters:** {param_size}")
+                    st.write(f"**Quantization:** {quant}")
+                    if st.button(f"🗑️ Delete {m}", key=f"del_{m}"):
+                        if delete_model(m):
+                            st.success(f"Deleted {m}")
+                            time.sleep(1)
+                            st.rerun()
+                        else:
+                            st.error(f"Failed to delete {m}")
