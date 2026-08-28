@@ -86,6 +86,42 @@ def render_vyasa_response(json_plan):
         
     return response
 
+def render_workspace_config():
+    st.markdown("### 📁 Workspace Configuration")
+    
+    # 1. Cloud Git Mounter
+    git_url = st.text_input("☁️ Quick Mount: Paste a GitHub URL to Clone & Analyze:", placeholder="https://github.com/user/repo.git")
+    if st.button("⬇️ Clone Repository"):
+        import subprocess
+        target_base = os.path.expanduser("~/vedic_workspaces")
+        os.makedirs(target_base, exist_ok=True)
+        repo_name = git_url.split("/")[-1].replace(".git", "") if "/" in git_url else "unknown_repo"
+        target_path = os.path.join(target_base, repo_name)
+        
+        if os.path.exists(target_path):
+            st.warning(f"Repository already exists at `{target_path}`.")
+            st.session_state["workspace_dir"] = target_path
+        else:
+            with st.spinner(f"Cloning {repo_name} from GitHub..."):
+                res = subprocess.run(["git", "clone", git_url, target_path], capture_output=True, text=True)
+                if res.returncode == 0:
+                    st.success(f"Successfully cloned into `{target_path}`")
+                    st.session_state["workspace_dir"] = target_path
+                else:
+                    st.error(f"Failed to clone: {res.stderr}")
+                    
+    # 2. Absolute Path Override
+    default_dir = st.session_state.get("workspace_dir", os.getcwd())
+    workspace_dir = st.text_input("🎯 Active Directory (Absolute Path)", default_dir)
+    st.session_state["workspace_dir"] = workspace_dir
+    
+    if not os.path.exists(workspace_dir):
+        st.error("Directory does not exist on your Mac!")
+        return None
+    else:
+        st.success(f"Agent is locked onto: `{workspace_dir}`")
+        return workspace_dir
+
 # ----------------- Main View -----------------
 st.title(app_mode)
 st.markdown("---")
@@ -173,9 +209,8 @@ if app_mode == "💬 Standard Chat (Hybrid Non-Transformers)":
 elif app_mode == "🧬 Coding Agent with Harness (Nidra)":
     st.markdown("Use this mode to **autonomously modify an existing codebase**. Mamba-2 (SSM) scans the filesystem, your selected Genius Coder writes the unified diff, and the Nidra Harness logs the memory graph.")
     
-    st.markdown("### 📁 Workspace Configuration")
-    workspace_dir = st.text_input("Target Directory (Absolute Path)", os.getcwd())
-    if not os.path.exists(workspace_dir): st.error("Directory does not exist!")
+    workspace_dir = render_workspace_config()
+    if not workspace_dir: st.stop()
     
     col1, col2 = st.columns(2)
     with col1:
@@ -216,17 +251,15 @@ elif app_mode == "🧬 Coding Agent with Harness (Nidra)":
                 
         with st.expander("View Memory Graph (PROJECT_MIND.md)"):
             memory_path = os.path.join(workspace_dir, "PROJECT_MIND.md")
-                if os.path.exists(memory_path):
+            if os.path.exists(memory_path):
                 with open(memory_path, "r", encoding="utf-8") as f:
                     st.markdown(f.read())
 
 elif app_mode == "🦅 Omni-Agent (Autonomous Terminal Loop)":
     st.markdown("This is the **Next-Gen Agentic Loop**. Mamba-2 ingests the entire Git repository to build an architectural blueprint. Qwen takes control of your Mac's Zsh terminal, looping autonomously to edit files, run scripts, read stdout errors, and fix bugs until the task is complete.")
     
-    st.markdown("### 📁 Workspace Configuration")
-    workspace_dir = st.text_input("Target Repository Directory (Absolute Path)", os.getcwd())
-    if not os.path.exists(workspace_dir): st.error("Directory does not exist!")
-    else: st.success(f"Omni-Agent is locked onto: `{workspace_dir}`")
+    workspace_dir = render_workspace_config()
+    if not workspace_dir: st.stop()
     
     from agents.omni_agent import run_omni_loop
     
@@ -240,13 +273,14 @@ elif app_mode == "🦅 Omni-Agent (Autonomous Terminal Loop)":
         coder_model = st.selectbox("🦅 Omni-Agent Typist (Llama-3 Abliterated)", models, index=cod_idx)
 
     intent_prompt = st.text_area("What do you want the Omni-Agent to do?", "Run 'npm test', find the failing tests, and fix the codebase.")
+    max_steps = st.slider("Max Autonomous Steps", min_value=1, max_value=30, value=10, help="How many times the agent is allowed to run a command, read the error, and try again before giving up.")
     
     if st.button("🚀 Launch Autonomous Loop", type="primary"):
         status = st.empty()
-        stream_placeholder = st.empty()
+        ui_container = st.container()
         
         try:
-            exec_log, blueprint = run_omni_loop(intent_prompt, meditate_model, coder_model, status, stream_placeholder, workspace_dir)
+            exec_log, blueprint = run_omni_loop(intent_prompt, meditate_model, coder_model, status, ui_container, workspace_dir, max_steps)
             st.session_state["last_omni_log"] = exec_log
             st.session_state["last_omni_bp"] = blueprint
             
