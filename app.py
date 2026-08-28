@@ -1,4 +1,5 @@
 import streamlit as st
+from config import DEFAULT_WORKSPACE_ROOT, DEFAULT_FALLBACK_DIR, CLAUDE_MEMORY_DIR, ANTIGRAVITY_BRAIN_DIR, FAST_MODEL, HEAVY_MODEL, INGEST_MODEL
 import json
 import requests
 import time
@@ -122,7 +123,133 @@ def render_workspace_config():
         st.success(f"Agent is locked onto: `{workspace_dir}`")
         return workspace_dir
 
+def render_file_tree(workspace_dir):
+    import os
+    st.markdown("### 🗂️ Project File Tree")
+    
+    ignore_dirs = {'.git', 'node_modules', 'venv', '__pycache__', '.next', 'dist', 'build'}
+    tree_str = ""
+    
+    for root, dirs, files in os.walk(workspace_dir):
+        dirs[:] = [d for d in dirs if d not in ignore_dirs]
+        level = root.replace(workspace_dir, '').count(os.sep)
+        indent = ' ' * 4 * (level)
+        folder = os.path.basename(root)
+        if folder:
+            tree_str += f"{indent}📂 **{folder}/**\n"
+        subindent = ' ' * 4 * (level + 1)
+        for f in sorted(files):
+            if not f.startswith('.'):
+                tree_str += f"{subindent}📄 {f}\n"
+                
+    if tree_str:
+        with st.expander("Explore Workspace Files", expanded=False):
+            st.markdown(tree_str)
+    else:
+        st.info("Workspace is empty.")
+
+
+def render_brain_importer(workspace_dir):
+    import os
+    import json
+    
+    with st.expander("🧠 Import External Agent Memory", expanded=False):
+        st.markdown("Import context from cloud agents (Claude Code, Antigravity) directly into your Local Omni-Agent's memory.")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**Claude Code Memory**")
+            claude_dir = CLAUDE_MEMORY_DIR
+            claude_memories = []
+            if os.path.exists(claude_dir):
+                claude_memories = [f for f in os.listdir(claude_dir) if f.endswith('.md')]
+            
+            if claude_memories:
+                selected_claude = st.selectbox("Select Claude Memory:", ["(None)"] + claude_memories)
+                if selected_claude != "(None)" and st.button("📥 Ingest Claude Context"):
+                    with open(os.path.join(claude_dir, selected_claude), 'r') as mf:
+                        raw_context = mf.read()
+                        
+                    with st.spinner("🧠 Local LLM is synthesizing Claude's memory..."):
+                        import requests
+                        from config import OLLAMA_URL, INGEST_MODEL
+                        
+                        payload = {
+                            "model": INGEST_MODEL,
+                            "messages": [
+                                {"role": "system", "content": "You are a Memory Synthesizer. Read this memory file from Claude Code. Extract the core architectural rules, findings, and context into a highly dense Markdown summary."},
+                                {"role": "user", "content": raw_context[-80000:]}
+                            ],
+                            "stream": False,
+                            "options": {"num_ctx": 32000, "temperature": 0.1}
+                        }
+                        
+                        res = requests.post(f"{OLLAMA_URL}/api/chat", json=payload).json()
+                        intelligent_summary = res.get("message", {}).get("content", "Failed to summarize.")
+                        
+                        from core.ollama_api import evict_model
+                        evict_model(INGEST_MODEL)
+                        
+                        from core.memory_graph import append_vritti
+                        append_vritti(f"Imported Claude Context: {selected_claude}", "Claude-Code", intelligent_summary, workspace_dir)
+                        st.success(f"✨ Synthesized and ingested {selected_claude} into Memory!")
+            else:
+                st.info("No Claude memory found in ~/claude-sync/memory/")
+                
+        with col2:
+            st.markdown("**Antigravity Transcripts**")
+            ag_dir = ANTIGRAVITY_BRAIN_DIR
+            ag_sessions = []
+            if os.path.exists(ag_dir):
+                # Just show the last 5 modified sessions for simplicity
+                ag_sessions = sorted([d for d in os.listdir(ag_dir) if os.path.isdir(os.path.join(ag_dir, d)) and d != "tempmediaStorage"], key=lambda x: os.path.getmtime(os.path.join(ag_dir, x)), reverse=True)[:5]
+                
+            if ag_sessions:
+                selected_ag = st.selectbox("Select Antigravity Session:", ["(None)"] + ag_sessions)
+                if selected_ag != "(None)" and st.button("📥 Ingest Antigravity Context"):
+                    transcript_path = os.path.join(ag_dir, selected_ag, ".system_generated", "logs", "transcript.jsonl")
+                    if os.path.exists(transcript_path):
+                        summary = f"Imported Antigravity Session: {selected_ag}\n"
+                        try:
+                            with open(transcript_path, 'r') as tf:
+                                # We can read the whole thing, but let's safely take the last 1000 lines 
+                                # to fit in Mamba's 32k window
+                                raw_lines = tf.readlines()[-1000:]
+                                raw_transcript = "".join(raw_lines)
+                                
+                            with st.spinner("🧠 Local LLM is synthesizing Antigravity context..."):
+                                import requests
+                                from config import OLLAMA_URL, INGEST_MODEL
+                                
+                                payload = {
+                                    "model": INGEST_MODEL,
+                                    "messages": [
+                                        {"role": "system", "content": "You are a Memory Synthesizer. Read this JSONL transcript from an advanced AI session. Extract all core architectural decisions, user instructions, and technical context into a clean, concise Markdown summary. Do not output JSON."},
+                                        {"role": "user", "content": raw_transcript[-80000:]} # safe cap
+                                    ],
+                                    "stream": False,
+                                    "options": {"num_ctx": 32000, "temperature": 0.1}
+                                }
+                                
+                                res = requests.post(f"{OLLAMA_URL}/api/chat", json=payload).json()
+                                intelligent_summary = res.get("message", {}).get("content", "Failed to summarize.")
+                                
+                                from core.ollama_api import evict_model
+                                evict_model(INGEST_MODEL)
+                                
+                                from core.memory_graph import append_vritti
+                                append_vritti(f"Imported Antigravity Context: {selected_ag}", "Antigravity", intelligent_summary, workspace_dir)
+                                st.success("✨ Local LLM successfully synthesized and ingested the external session!")
+                                
+                        except Exception as e:
+                            st.error(f"Error during intelligent extraction: {e}")
+                    else:
+                        st.error("Transcript not found for this session.")
+            else:
+                st.info("No Antigravity sessions found.")
+
 # ----------------- Main View -----------------
+
 st.title(app_mode)
 st.markdown("---")
 
@@ -214,11 +341,11 @@ elif app_mode == "🧬 Coding Agent with Harness (Nidra)":
     
     col1, col2 = st.columns(2)
     with col1:
-        med_idx = models.index("granite4:3b-h") if "granite4:3b-h" in models else 0
+        med_idx = models.index(INGEST_MODEL) if INGEST_MODEL in models else 0
         meditate_model = st.selectbox("🧘 Meditate Layer (Scanner)", models, index=med_idx)
     with col2:
-        target = "mannix/llama3.1-8b-abliterated:latest"
-        cod_idx = models.index(target) if target in models else (models.index("qwen2.5:32b") if "qwen2.5:32b" in models else 0)
+        target = FAST_MODEL
+        cod_idx = models.index(target) if target in models else (models.index("qwen2.5:32b") if HEAVY_MODEL in models else 0)
         coder_model = st.selectbox("🧠 Coder Layer (Fast Abliterated)", models, index=cod_idx)
 
     intent_prompt = st.text_area("What do you want to change or fix?", "Add a dark mode toggle to the sidebar in app.py")
@@ -256,54 +383,211 @@ elif app_mode == "🧬 Coding Agent with Harness (Nidra)":
                     st.markdown(f.read())
 
 elif app_mode == "🦅 Omni-Agent (Autonomous Terminal Loop)":
-    st.markdown("This is the **Next-Gen Agentic Loop**. Mamba-2 ingests the entire Git repository to build an architectural blueprint. Qwen takes control of your Mac's Zsh terminal, looping autonomously to edit files, run scripts, read stdout errors, and fix bugs until the task is complete.")
+    st.markdown("This is the **Next-Gen Agentic Loop**. Mamba-2 ingests the codebase, and Qwen iterates through your terminal.")
     
     workspace_dir = render_workspace_config()
     if not workspace_dir: st.stop()
+    render_file_tree(workspace_dir)
+    render_brain_importer(workspace_dir)
     
-    from agents.omni_agent import run_omni_loop
+    from agents.omni_state_machine import init_omni_loop, generate_next_thought, parse_action
+    from core.terminal_engine import TerminalEngine
+    from core.tool_registry import ToolRegistry
+    from core.file_system import apply_search_replace
+    from core.memory_graph import append_vritti
+    import json
     
     col1, col2 = st.columns(2)
     with col1:
-        med_idx = models.index("granite4:3b-h") if "granite4:3b-h" in models else 0
+        med_idx = models.index(INGEST_MODEL) if INGEST_MODEL in models else 0
         meditate_model = st.selectbox("🐍 SSM Ingestion Engine (Mamba)", models, index=med_idx)
     with col2:
-        target = "mannix/llama3.1-8b-abliterated:latest"
-        cod_idx = models.index(target) if target in models else (models.index("qwen2.5:32b") if "qwen2.5:32b" in models else 0)
+        target = FAST_MODEL
+        cod_idx = models.index(target) if target in models else (models.index("qwen2.5:32b") if HEAVY_MODEL in models else 0)
         coder_model = st.selectbox("🦅 Omni-Agent Typist (Llama-3 Abliterated)", models, index=cod_idx)
 
-    intent_prompt = st.text_area("What do you want the Omni-Agent to do?", "Run 'npm test', find the failing tests, and fix the codebase.")
-    max_steps = st.slider("Max Autonomous Steps", min_value=1, max_value=30, value=10, help="How many times the agent is allowed to run a command, read the error, and try again before giving up.")
-    
-    if st.button("🚀 Launch Autonomous Loop", type="primary"):
-        status = st.empty()
-        ui_container = st.container()
-        
-        try:
-            exec_log, blueprint = run_omni_loop(intent_prompt, meditate_model, coder_model, status, ui_container, workspace_dir, max_steps)
-            st.session_state["last_omni_log"] = exec_log
-            st.session_state["last_omni_bp"] = blueprint
-            
-            st.success("🎉 Omni-Agent has completed the execution loop!")
-            import time
-            time.sleep(1)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Execution Failed: {e}")
+    # State Machine Initialization
+    if "omni_state" not in st.session_state:
+        st.session_state.omni_state = "IDLE"
+        st.session_state.omni_step = 1
+        st.session_state.omni_log = []
+        st.session_state.omni_messages = []
+        st.session_state.terminal = None
+        st.session_state.action_history = []
+        st.session_state.hitl_enabled = True
 
-    if "last_omni_log" in st.session_state:
-        st.markdown("---")
-        st.subheader("🛠️ Agent Execution Log")
-        st.info("💡 **Git Tracking:** A checkpoint was created before the loop started. Run `git reset --hard HEAD~1` to undo everything.")
+    if st.session_state.omni_state == "IDLE":
+        intent_prompt = st.text_area("What do you want the Omni-Agent to do?", "Run 'npm test', find the failing tests, and fix the codebase.")
         
-        with st.expander("🐍 View Mamba's Architectural Blueprint"):
-            st.markdown(st.session_state["last_omni_bp"])
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
+            max_steps = st.slider("Max Autonomous Steps", 1, 30, 10)
+        with col_s2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.session_state.hitl_enabled = st.checkbox("🛡️ Require Human Approval for Terminal Commands", value=True)
+        
+        if st.button("🚀 Launch Autonomous Loop", type="primary"):
+            with st.spinner("🐍 Mamba is ingesting codebase and generating blueprint..."):
+                messages, blueprint = init_omni_loop(intent_prompt, meditate_model, coder_model, workspace_dir)
+                st.session_state.omni_messages = messages
+                st.session_state.omni_bp = blueprint
+                st.session_state.terminal = TerminalEngine(workspace_dir=workspace_dir)
+                st.session_state.registry = ToolRegistry(workspace_dir, st.session_state.terminal)
+                st.session_state.intent_prompt = intent_prompt
+                st.session_state.max_steps = max_steps
+                st.session_state.omni_state = "GENERATING"
+                st.rerun()
+
+    else:
+        # Render historical log
+        st.markdown("---")
+        st.subheader("🦅 Living Agent Transcript")
+        
+        # Render previous steps
+        for log in st.session_state.omni_log:
+            with st.expander(f"🦅 Step {log['step']}: {log.get('type', 'Action').upper()}", expanded=(log['step'] == st.session_state.omni_step - 1)):
+                if 'raw' in log: st.code(log['raw'], language="json")
+                
+                if log.get('type') == 'command':
+                    st.markdown(f"**💻 Terminal Output (Command: `{log['cmd']}`)**")
+                    st.code(log['output'], language="bash")
+                elif log.get('type') == 'pending_command':
+                    st.warning(f"**⏳ Awaiting Approval for Command: `{log['cmd']}`**")
+                elif log.get('type') == 'edit':
+                    st.success(f"📝 Edited `{log['file']}`")
+                    if 'diff' in log: st.code(log['diff'], language="diff")
+                elif log.get('type') == 'loop_intercept':
+                    st.error(log['output'])
+                elif log.get('type') == 'artifact':
+                    st.success(f"📄 Generated Artifact: `{log['title']}`")
+                    with open(log['path'], 'r') as art_f:
+                        st.markdown(art_f.read())
+                elif log.get('type') == 'subagent':
+                    st.info(f"🤖 Subagent ({log['role']}) Task: {log['task']}")
+                    for entry in log['log']:
+                        st.code(entry, language="bash")
+                    st.success(f"Result: {log['msg']}")
+                elif log.get('type') == 'github_pr':
+                    st.success(f"🐙 **Pull Request Raised!**")
+                    st.markdown(f"[View PR on GitHub]({log['url']})")
+
+        # Handle current state
+        if st.session_state.omni_state == "GENERATING":
+            if st.session_state.omni_step > st.session_state.max_steps:
+                st.error("Max steps reached. Terminating loop.")
+                st.session_state.omni_state = "DONE"
+                st.rerun()
+                
+            st.write(f"🦅 **[STEP {st.session_state.omni_step}/{st.session_state.max_steps}]** Thinking...")
+            step_container = st.container()
+            step_placeholder = step_container.empty()
             
-        for log in st.session_state["last_omni_log"]:
-            if log["type"] == "command":
-                st.code(f"$ {log['cmd']}", language="bash")
-            elif log["type"] == "edit":
-                st.code(f"📝 Edited file: {log['file']}", language="markdown")
+            raw_response = generate_next_thought(coder_model, st.session_state.omni_messages, step_placeholder)
+            st.session_state.omni_messages.append({"role": "assistant", "content": raw_response})
+            action_data = parse_action(raw_response)
+            
+            st.session_state.current_action = action_data
+            st.session_state.current_raw = raw_response
+            
+            # Loop Detection
+            current_action_str = json.dumps(action_data, sort_keys=True)
+            if current_action_str in st.session_state.action_history[-3:]:
+                st.session_state.omni_messages.append({"role": "user", "content": "🚨 SYSTEM OVERRIDE: You just attempted the exact same action you already tried. You MUST try a completely different approach or declare 'done'."})
+                st.session_state.action_history.append("FORCED_PIVOT")
+                
+                # Save to log so UI doesn't lose it
+                st.session_state.omni_log.append({
+                    "step": st.session_state.omni_step,
+                    "type": "loop_intercept",
+                    "raw": raw_response,
+                    "output": "🚨 CRITICAL LOOP DETECTED. The engine intercepted the duplicate action and forced a pivot."
+                })
+                
+                st.warning("⚠️ Loop detected. Forcing agent to pivot.")
+                st.session_state.omni_step += 1
+                st.button("Continue to next step")
+                st.stop()
+            else:
+                st.session_state.action_history.append(current_action_str)
+            
+            action = action_data.get("action")
+            
+            if action == "done":
+                st.session_state.omni_state = "DONE"
+                append_vritti(st.session_state.intent_prompt, "Omni-Loop", "[PRAMANA] Done", workspace_dir=workspace_dir)
+                st.rerun()
+                
+            elif action == "run_command" and st.session_state.hitl_enabled:
+                cmd = action_data.get("command", "")
+                st.session_state.omni_log.append({
+                    "step": st.session_state.omni_step, 
+                    "type": "pending_command", 
+                    "cmd": cmd, 
+                    "raw": raw_response
+                })
+                st.session_state.omni_step += 1
+                st.session_state.omni_state = "AWAITING_APPROVAL"
+                st.rerun()
+            else:
+                # Dynamic Tool Registry Execution
+                result_obj = st.session_state.registry.execute_tool(action_data, fast_model=FAST_MODEL, main_model=coder_model)
+                
+                log_entry = {"step": st.session_state.omni_step, "raw": raw_response}
+                log_entry.update(result_obj)
+                st.session_state.omni_log.append(log_entry)
+                
+                st.session_state.omni_messages.append({"role": "user", "content": result_obj.get("msg", "")})
+                st.session_state.omni_step += 1
+                st.rerun()
+
+        elif st.session_state.omni_state == "AWAITING_APPROVAL":
+            cmd = st.session_state.current_action.get("command")
+            st.warning(f"🚨 **Human-in-the-Loop Approval Required**")
+            st.info("The agent's thought process for this command is preserved in the log above.")
+            
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if st.button("✅ Approve & Execute", type="primary"):
+                    output = st.session_state.terminal.execute(cmd)
+                    
+                    # Update the pending log entry
+                    for log in reversed(st.session_state.omni_log):
+                        if log.get("type") == "pending_command":
+                            log["type"] = "command"
+                            log["output"] = output
+                            break
+                            
+                    st.session_state.omni_messages.append({"role": "user", "content": f"Command Executed.\nOutput:\n```\n{output}\n```"})
+                    st.session_state.omni_state = "GENERATING"
+                    st.rerun()
+            with col_b:
+                steer_input = st.text_input("Reject & Steer Agent:", placeholder="No, run 'npm install' instead.")
+                if st.button("🚫 Reject"):
+                    for log in reversed(st.session_state.omni_log):
+                        if log.get("type") == "pending_command":
+                            log["type"] = "rejected_command"
+                            log["output"] = f"🚫 User rejected execution. Feedback: {steer_input}"
+                            break
+                            
+                    st.session_state.omni_messages.append({"role": "user", "content": f"USER REJECTED COMMAND. Feedback: {steer_input}"})
+                    st.session_state.omni_state = "GENERATING"
+                    st.rerun()
+                    
+        elif st.session_state.omni_state == "DONE":
+            st.success("🎉 Omni-Agent has completed the task!")
+            if st.button("Start New Task"):
+                if st.session_state.terminal: st.session_state.terminal.cleanup()
+                st.session_state.omni_state = "IDLE"
+                st.rerun()
+                
+        # The Steer / Interrupt Button
+        if st.session_state.omni_state != "DONE":
+            st.markdown("---")
+            steer = st.chat_input("🚨 Intervene / Steer the Agent mid-loop...")
+            if steer:
+                st.session_state.omni_messages.append({"role": "user", "content": f"🚨 USER OVERRIDE / STEER: {steer}"})
+                st.toast("Feedback injected into Agent's memory!")
+
 
 else:
     st.markdown("Describe an app below. The **Architect** will design it, and the **Coder** will manifest it into the sandbox.")

@@ -71,6 +71,8 @@ Format MUST be exactly one of these:
     terminal = TerminalEngine(workspace_dir=workspace_dir)
     
     execution_log = []
+    action_history = []
+    stuck_warnings = 0
     
     for step in range(1, max_steps + 1):
         status.write(f"🦅 **[STEP {step}/{max_steps}]** {coder_model} is deciding next action...")
@@ -108,6 +110,23 @@ Format MUST be exactly one of these:
             action_data = json.loads(json_str)
             action = action_data.get("action")
             
+            # Intelligent Loop Detection
+            current_action_str = json.dumps(action_data, sort_keys=True)
+            if current_action_str in action_history[-3:]:
+                stuck_warnings += 1
+                if stuck_warnings >= 2:
+                    step_expander.error("🚨 **[CRITICAL LOOP DETECTED]** The agent has repeatedly attempted the exact same action and is stuck. Terminating loop for safety.")
+                    messages.append({"role": "user", "content": "You are repeating the same failed action endlessly. The system has terminated you."})
+                    break
+                else:
+                    step_expander.warning("⚠️ **[STUCK STATE PREVENTED]** Agent attempted a duplicate action. Forcing pivot...")
+                    messages.append({"role": "user", "content": "🚨 SYSTEM OVERRIDE: You just attempted the exact same action you already tried recently. It did not work. You MUST try a completely different approach, edit a different file, or declare 'done'."})
+                    action_history.append("FORCED_PIVOT")
+                    continue
+            else:
+                action_history.append(current_action_str)
+                stuck_warnings = 0
+
             if action == "done":
                 status.write("🎉 **[OMNI-AGENT]** Task declared complete!")
                 append_vritti(intent_prompt, "Omni-Loop", "[PRAMANA] Done", extra=f"Completed in {step} steps.", workspace_dir=workspace_dir)
