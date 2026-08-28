@@ -276,7 +276,7 @@ def render_workspace_config(key_prefix=""):
                     
     # 3. Absolute Path Override
     default_dir = st.session_state.get("workspace_dir", os.getcwd())
-    workspace_dir = st.text_input("🎯 Active Directory (Absolute Path)", default_dir, key=f"workspace_dir_{key_prefix}")
+    workspace_dir = st.text_input("🎯 Active Directory (Absolute Path)", default_dir, key=f"workspace_dir_{key_prefix}", help="The agent will have full read/write terminal access to this directory.")
     st.session_state["workspace_dir"] = workspace_dir
     
     if not os.path.exists(workspace_dir):
@@ -534,13 +534,13 @@ with tab1:
     if "messages" not in st.session_state:
         st.session_state.messages = []
         
-    mount_context = st.checkbox("Mount Local Workspace (Feed Infinite Context)", value=False)
+    mount_context = st.checkbox("Mount Local Workspace (Feed Infinite Context)", value=False, help="Checking this box reads your entire mapped codebase and injects it secretly into the system prompt. Ideal for Q&A on massive codebases.")
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    if prompt := st.chat_input("Message your local model..."):
+    if prompt := st.chat_input("Message your local model... (e.g. \"Explain the routing logic in src/app.js\")"):
         st.chat_message("user").markdown(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
 
@@ -620,7 +620,7 @@ with tab3:
         st.info(f"🧠 **Coder Layer (Abliterated):** `{FAST_MODEL}`")
         coder_model = FAST_MODEL
 
-    intent_prompt = st.text_area("What do you want to change or fix?", "Add a dark mode toggle to the sidebar in app.py")
+    intent_prompt = st.text_area("🛠️ What do you want to change or fix?", placeholder="e.g. Add a dark mode toggle to the sidebar in app.py", help="Mamba-2 will scan the codebase first, and Llama3.1 will execute a unified diff search-and-replace.")
     
     if st.button("🚀 Execute Edit", type="primary"):
         status = st.empty()
@@ -726,7 +726,7 @@ with tab4:
             
         col_t1, col_t2 = st.columns([5, 1])
         with col_t1:
-            intent_prompt = st.text_area("What do you want the Omni-Agent to do?", key="omni_intent_val", height=100)
+            intent_prompt = st.text_area("⚡ What do you want the Omni-Agent to do?", key="omni_intent_val", height=100, placeholder="e.g., \"Run npm test, find the failing test cases, and fix the off-by-one errors in core/utils.py\"", help="The agent will autonomously run terminal commands, write code, and loop until it mathematically proves the task is complete.")
         with col_t2:
             st.html("<br>")
             if st.button("💡 Auto-Suggest"):
@@ -996,7 +996,7 @@ with tab4:
             
             # Allow conversational follow-ups without wiping context
             st.markdown("---")
-            follow_up = st.chat_input("Ask a follow-up question or assign a new task...")
+            follow_up = st.chat_input("Ask a follow-up question (e.g. \"Great, now add CSS styling to the button\")")
             if follow_up:
                 st.session_state.omni_messages.append({"role": "user", "content": follow_up})
                 st.session_state.max_steps += 5 # Give it more steps to complete the follow-up
@@ -1006,7 +1006,7 @@ with tab4:
         # The Steer / Interrupt Button
         if st.session_state.omni_state in ["GENERATING", "AWAITING_APPROVAL"]:
             st.markdown("---")
-            steer = st.chat_input("🚨 Intervene / Steer the Agent mid-loop...")
+            steer = st.chat_input("🚨 Intervene / Steer the Agent (e.g. \"Stop using npm, use yarn instead!\")")
             if steer:
                 st.session_state.omni_messages.append({"role": "user", "content": f"🚨 USER OVERRIDE / STEER: {steer}"})
                 st.toast("Feedback injected into Agent's memory!")
@@ -1068,7 +1068,7 @@ with tab5:
     
     with col_m1:
         st.subheader("📥 Download New Model")
-        new_model_name = st.text_input("Enter Ollama model name (e.g. `llama3.1:8b`, `qwen2.5:32b`)")
+        new_model_name = st.text_input("Enter Ollama model name", placeholder="e.g. llama3.1:8b, qwen2.5:32b, deepseek-coder-v2", help="Find thousands of open-source models at ollama.com/library")
         if st.button("Pull Model", type="primary"):
             if new_model_name:
                 pull_box = st.empty()
