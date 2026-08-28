@@ -225,7 +225,7 @@ def fetch_github_repos():
         res = subprocess.run(["gh", "repo", "list", "--json", "nameWithOwner,url", "--limit", "20"], capture_output=True, text=True)
         if res.returncode == 0:
             return json.loads(res.stdout)
-    except: pass
+    except: max_steps = st.number_input("Max Steps", min_value=1, max_value=50, value=15)
     return []
 
 def render_workspace_config(key_prefix=""):
@@ -436,7 +436,7 @@ def render_brain_importer(workspace_dir):
                                             # Truncate massive file reads from planner responses
                                             if len(content) > 1000: content = content[:1000] + "...[truncated]"
                                             filtered_transcript += f"\n[{t}]: {content}"
-                                    except: pass
+                                    except: max_steps = st.number_input("Max Steps", min_value=1, max_value=50, value=15)
                                 
                             st.info("🧠 Model pre-filling context...")
                             synthesized_box = st.empty()
@@ -485,10 +485,10 @@ def render_brain_importer(workspace_dir):
                                                     cwd = call.get("args", {}).get("Cwd")
                                                     if cwd and cwd != "/Users/badenath":
                                                         cwds[cwd] = cwds.get(cwd, 0) + 1
-                                            except: pass
+                                            except: max_steps = st.number_input("Max Steps", min_value=1, max_value=50, value=15)
                                     if cwds:
                                         detected_cwd = max(cwds, key=cwds.get)
-                            except: pass
+                            except: max_steps = st.number_input("Max Steps", min_value=1, max_value=50, value=15)
                             
                             if detected_cwd and os.path.exists(detected_cwd):
                                 st.info(f"📂 Detected active project directory: `{detected_cwd}`")
@@ -558,7 +558,7 @@ with tab1:
                 try:
                     file_tree = build_tree_with_hints()
                     final_system_prompt += f"\n\n[SYSTEM]: The user has mounted their local workspace. Here is the directory tree for context:\n{file_tree}"
-                except: pass
+                except: max_steps = st.number_input("Max Steps", min_value=1, max_value=50, value=15)
             
             if "vyasa" not in selected_model.lower() and final_system_prompt:
                 messages = [{"role": "system", "content": final_system_prompt}] + messages
@@ -663,6 +663,7 @@ with tab4:
     render_brain_importer(workspace_dir)
     
     from agents.omni_state_machine import init_omni_loop, generate_next_thought, parse_action
+    from backend.vram_manager import enforce_context_window
     from core.terminal_engine import TerminalEngine
     from core.tool_registry import ToolRegistry
     from core.checkpoint import save_checkpoint, load_checkpoint, clear_checkpoints, build_phase_summary
@@ -744,7 +745,7 @@ with tab4:
                             for f in files[:5]:
                                 with open(os.path.join(workspace_dir, f), "r", errors="ignore") as mf:
                                     context_data += f"\n--- {f} ---\n" + mf.read()[:1000]
-                        except: pass
+                        except: max_steps = st.number_input("Max Steps", min_value=1, max_value=50, value=15)
 
                     import requests
                     from config import OLLAMA_URL, INGEST_MODEL
@@ -771,7 +772,7 @@ with tab4:
         
         col_s1, col_s2, col_s3 = st.columns(3)
         with col_s1:
-            pass
+            max_steps = st.number_input("Max Steps", min_value=1, max_value=50, value=15)
         with col_s2:
             st.html("<br>")
             st.session_state.hitl_enabled = st.checkbox("🛡️ Require Human Approval", value=True)
@@ -881,6 +882,7 @@ with tab4:
             step_container = st.container()
             step_placeholder = step_container.empty()
             
+            st.session_state.omni_messages = enforce_context_window(st.session_state.omni_messages, max_turns=8)
             raw_response = generate_next_thought(coder_model, st.session_state.omni_messages, step_placeholder)
             st.session_state.omni_messages.append({"role": "assistant", "content": raw_response})
             action_data = parse_action(raw_response)
@@ -1049,7 +1051,7 @@ with tab2:
         try:
             app_dir = st.session_state["last_app_files"][0]["filename"].split("/")[0] if st.session_state["last_app_files"] else "GeneratedApp"
             st.code(f"cd {app_dir} && chmod +x deploy.sh && ./deploy.sh", language="bash")
-        except: pass
+        except: max_steps = st.number_input("Max Steps", min_value=1, max_value=50, value=15)
 
         for f in st.session_state["last_app_files"]:
             with st.expander(f"📄 {f['filename']}"):
