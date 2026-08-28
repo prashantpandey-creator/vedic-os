@@ -13,7 +13,7 @@ from agents.coder_nidra import run_nidra_pipeline
 st.set_page_config(page_title="Vedic Framework OS", page_icon="🪷", layout="wide")
 
 # Custom CSS for glowing dark mode
-st.markdown("""
+st.html("""
 <style>
     /* Glassmorphism Dark Theme */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
@@ -178,7 +178,7 @@ st.markdown("""
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 </style>
-""", unsafe_allow_html=True)
+""")
 
 # ----------------- Sidebar -----------------
 st.sidebar.title("🪷 Vedic Framework")
@@ -682,11 +682,16 @@ with tab4:
     if "omni_state" not in st.session_state:
         st.session_state.omni_state = "IDLE"
         st.session_state.omni_step = 1
+        st.session_state.total_steps = 1
         st.session_state.omni_log = []
         st.session_state.omni_messages = []
         st.session_state.terminal = None
         st.session_state.action_history = []
         st.session_state.hitl_enabled = True
+
+    if "total_steps" not in st.session_state:
+        st.session_state.total_steps = st.session_state.get("omni_step", 1)
+
 
     if st.session_state.omni_state == "IDLE":
         # Check for resumable checkpoint
@@ -700,6 +705,7 @@ with tab4:
                     st.session_state.omni_messages = existing_cp.get("messages", [])
                     st.session_state.omni_log = existing_cp.get("log", [])
                     st.session_state.omni_step = existing_cp.get("step", 1)
+                    st.session_state.total_steps = existing_cp.get("total_steps", existing_cp.get("step", 1))
                     st.session_state.action_history = existing_cp.get("action_history", [])
                     st.session_state.intent_prompt = existing_cp.get("intent", "")
                     st.session_state.phase = existing_cp.get("phase", 1)
@@ -722,7 +728,7 @@ with tab4:
         with col_t1:
             intent_prompt = st.text_area("What do you want the Omni-Agent to do?", key="omni_intent_val", height=100)
         with col_t2:
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.html("<br>")
             if st.button("💡 Auto-Suggest"):
                 with st.spinner("Analyzing repo..."):
                     context_data = ""
@@ -767,10 +773,10 @@ with tab4:
         with col_s1:
             max_steps = st.slider("Max Autonomous Steps", 1, 30, 10)
         with col_s2:
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.html("<br>")
             st.session_state.hitl_enabled = st.checkbox("🛡️ Require Human Approval", value=True)
         with col_s3:
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.html("<br>")
             long_running = st.checkbox("♾️ Long-Running Harness (Unlimited)", value=False)
         
         if st.button("🚀 Launch Autonomous Loop", type="primary"):
@@ -830,46 +836,46 @@ with tab4:
 
         # Handle current state
         if st.session_state.omni_state == "GENERATING":
-            if st.session_state.omni_step > st.session_state.max_steps:
+            # 1. Absolute Termination Guard
+            if st.session_state.total_steps > st.session_state.max_steps:
+                save_checkpoint(workspace_dir, dict(st.session_state))
+                st.error(f"Max total steps ({st.session_state.max_steps}) reached across all phases.")
+                st.session_state.omni_state = "DONE"
+                st.rerun()
+                
+            # 2. Context Window Overflow Guard (Phase Transition)
+            # A typical local model context window (8k) overflows around 10-15 deep tool steps.
+            # We flush at 10 steps to guarantee stability.
+            if st.session_state.omni_step > 10:
                 current_phase = st.session_state.get("phase", 1)
                 
-                if st.session_state.max_steps >= 999:
-                    # LONG-RUNNING MODE: Phase transition instead of termination
-                    phase_summary = build_phase_summary(st.session_state.omni_log)
-                    if "phase_summaries" not in st.session_state:
-                        st.session_state.phase_summaries = []
-                    st.session_state.phase_summaries.append(phase_summary)
-                    
-                    # Save checkpoint before phase transition
-                    save_checkpoint(workspace_dir, dict(st.session_state))
-                    
-                    # Re-ingest codebase with fresh eyes (files may have changed!)
-                    st.info("♻️ Phase {} complete. Re-ingesting codebase for Phase {}...".format(current_phase, current_phase + 1))
-                    status_box = st.empty()
-                    messages, blueprint = init_omni_loop(st.session_state.intent_prompt, meditate_model, coder_model, workspace_dir, status_container=status_box)
-                    
-                    # Inject prior phase summaries into the new system prompt
-                    prior_context = "\n".join(["Phase {}: {}".format(i+1, s) for i, s in enumerate(st.session_state.phase_summaries)])
-                    messages[0]["content"] += "\n\nPRIOR PHASE SUMMARIES (your own earlier work):\n" + prior_context
-                    
-                    st.session_state.omni_messages = messages
-                    st.session_state.omni_log = [{
-                        "step": 0,
-                        "type": "blueprint",
-                        "blueprint": blueprint
-                    }]
-                    st.session_state.omni_step = 1
-                    st.session_state.action_history = []
-                    st.session_state.phase = current_phase + 1
-                    st.session_state.max_steps = 999  # keep going
-                    st.info("♻️ Phase {} -> Phase {}. Fresh context window, persistent memory.".format(current_phase, current_phase + 1))
-                    st.rerun()
-                else:
-                    # Normal mode: terminate
-                    save_checkpoint(workspace_dir, dict(st.session_state))
-                    st.error("Max steps reached. Session checkpointed.")
-                    st.session_state.omni_state = "DONE"
-                    st.rerun()
+                phase_summary = build_phase_summary(st.session_state.omni_log)
+                if "phase_summaries" not in st.session_state:
+                    st.session_state.phase_summaries = []
+                st.session_state.phase_summaries.append(phase_summary)
+                
+                # Save checkpoint before phase transition
+                save_checkpoint(workspace_dir, dict(st.session_state))
+                
+                st.info(f"♻️ Context window nearing capacity (10 steps). Compressing Phase {current_phase} and re-ingesting codebase...")
+                status_box = st.empty()
+                messages, blueprint = init_omni_loop(st.session_state.intent_prompt, meditate_model, coder_model, workspace_dir, status_container=status_box)
+                
+                # Inject compressed memory of all prior phases
+                prior_context = "\n".join([f"Phase {i+1}: {s}" for i, s in enumerate(st.session_state.phase_summaries)])
+                messages[0]["content"] += "\n\nPRIOR PHASE SUMMARIES (your own earlier work):\n" + prior_context
+                
+                st.session_state.omni_messages = messages
+                st.session_state.omni_log = [{
+                    "step": 0,
+                    "type": "blueprint",
+                    "blueprint": blueprint
+                }]
+                st.session_state.omni_step = 1
+                st.session_state.action_history = []
+                st.session_state.phase = current_phase + 1
+                st.info(f"♻️ Phase {current_phase} -> Phase {current_phase + 1}. Context flushed. Memory preserved.")
+                st.rerun()
                 
             st.write(f"🦅 **[STEP {st.session_state.omni_step}/{st.session_state.max_steps}]** Thinking...")
             step_container = st.container()
@@ -898,6 +904,7 @@ with tab4:
                 
                 st.warning("⚠️ Loop detected. Forcing agent to pivot.")
                 st.session_state.omni_step += 1
+                st.session_state.total_steps += 1
                 st.button("Continue to next step")
                 st.stop()
             else:
@@ -921,6 +928,7 @@ with tab4:
                     "raw": raw_response
                 })
                 st.session_state.omni_step += 1
+                st.session_state.total_steps += 1
                 st.session_state.omni_state = "AWAITING_APPROVAL"
                 st.rerun()
             else:
@@ -933,6 +941,7 @@ with tab4:
                 
                 st.session_state.omni_messages.append({"role": "user", "content": result_obj.get("msg", "")})
                 st.session_state.omni_step += 1
+                st.session_state.total_steps += 1
                 # Auto-checkpoint every 5 steps
                 if st.session_state.omni_step % 5 == 0:
                     save_checkpoint(workspace_dir, dict(st.session_state))
@@ -1111,3 +1120,4 @@ with tab5:
                             st.rerun()
                         else:
                             st.error(f"Failed to delete {m}")
+# force trigger streamlit hot-reload

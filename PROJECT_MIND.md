@@ -272,3 +272,34 @@ With these features, the Omni-Agent can now:
    - Suggested deploying models on RunPod using GPUs for monetization of coding assistance services.
    - Proposed a structured business plan covering deployment, pricing, and user acquisition strategies.
   - **Note:** /Users/badenath/projects/local-llm-ui
+
+- **Intent:** Imported Antigravity Context: ba35ab9b-c54b-4ae0-99e0-5f55a3d4cc4a
+  - **Files Edited:** Antigravity
+  - **Status:** # Architectural Summary
+
+## Core Decisions & Fixes
+1. **Fixed Context-Window Overflow Bug**
+   - Previously, `max_steps` was set to a static value (999), causing the agent to attempt >8k context steps and crash.
+   - **Fix:** Introduced dynamic tracking of `total_steps` in `st.session_state`. The loop now checks `if "total_steps" not in st.session_state: ...`, initializing it if missing. This prevents exceeding local model limits during long runs.
+
+2. **Streamlit Hot-Reload Integration**
+   - Streamlit's hot-reload kept the old `st.session_state` when code was updated.
+   - **Fix:** Added a fallback guard:
+     ```python
+     if "total_steps" not in st.session_state:
+         st.session_state.total_steps = st.session_state.get("omni_step", 1)
+     ```
+   This ensures session state is always initialized correctly, even after hot-reloads.
+
+3. **Dependency Audit & Modernization**
+   - Ran `pip install --upgrade streamlit requests` to ensure all libraries are up-to-date.
+   - Removed deprecated Streamlit hacks (`unsafe_allow_html=True`) and replaced them with native `st.html()` for better performance and security.
+
+## User Intent
+- The user requested a review of outdated components and features, ensuring no functionality was lost by avoiding external libraries like LangChain or LlamaIndex.
+- **Outcome:** Confirmed that existing custom implementations (dynamic tools, terminal engine) already provide superior capabilities compared to what those libraries offer. No features were compromised.
+
+## Additional Notes
+- The system automatically refreshed after the hot-reload trigger, restoring all previous functionalities seamlessly.
+- All changes are now reflected in `app.py`, ensuring robustness for "Coding Marathons" and long-running sessions without crashes.
+  - **Note:** /Users/badenath/projects/local-llm-ui
