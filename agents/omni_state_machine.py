@@ -1,5 +1,5 @@
 import os
-import json
+import orjson
 import requests
 import re
 import subprocess
@@ -37,7 +37,7 @@ def init_omni_loop(intent_prompt, meditate_model, coder_model, workspace_dir="."
         res = requests.post(f"{OLLAMA_URL}/api/chat", json=meditate_payload, stream=True)
         for line in res.iter_lines():
             if line:
-                chunk = json.loads(line)
+                chunk = orjson.loads(line)
                 if "message" in chunk and "content" in chunk["message"]:
                     blueprint += chunk["message"]["content"]
                     if status_container:
@@ -55,11 +55,19 @@ def init_omni_loop(intent_prompt, meditate_model, coder_model, workspace_dir="."
     
     registry = ToolRegistry(workspace_dir, None)
     system = f"""You are the Vedic Omni-Agent. You have native Zsh terminal access to this Mac.
-PROJECT MEMORY:
+
+=========================================
+1. HISTORICAL PROJECT MEMORY (Context)
+=========================================
+The following is historical context, user preferences, and past conversational memory. Use this to understand WHY you are doing things.
 {memory}
 
-ARCHITECTURAL BLUEPRINT:
+=========================================
+2. CURRENT CODEBASE BLUEPRINT (State)
+=========================================
+The following is the real-time structure of the Git repository/codebase as it exists on the hard drive right now. Use this to understand WHAT files exist.
 {blueprint}
+=========================================
 
 You must accomplish the user's intent autonomously.
 Output ONLY valid JSON for your next action.
@@ -111,7 +119,7 @@ def generate_next_thought(coder_model, messages, step_placeholder):
         raw_response = ""
         for line in coder_res.iter_lines():
             if line:
-                chunk = json.loads(line)
+                chunk = orjson.loads(line)
                 if "message" in chunk and "content" in chunk["message"]:
                     raw_response += chunk["message"]["content"]
                     step_placeholder.code(raw_response, language="json")
@@ -136,7 +144,7 @@ def parse_action(raw_response):
         if fence in text:
             try:
                 inner = text.split(fence)[1].split("```")[0].strip()
-                return json.loads(inner)
+                return orjson.loads(inner)
             except Exception:
                 pass
     
@@ -163,12 +171,12 @@ def parse_action(raw_response):
                     if depth == 0:
                         candidate = text[start:i+1]
                         try:
-                            return json.loads(candidate)
+                            return orjson.loads(candidate)
                         except Exception:
                             # Try collapsing whitespace (fixes newlines inside string values)
                             try:
                                 collapsed = " ".join(candidate.split())
-                                return json.loads(collapsed)
+                                return orjson.loads(collapsed)
                             except Exception:
                                 break
     

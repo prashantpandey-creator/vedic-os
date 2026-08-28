@@ -7,7 +7,10 @@ RUN apt-get update && apt-get install -y \\
     git \\
     curl \\
     nodejs \\
-    npm \\
+    npm \
+    ripgrep \
+    fd-find \
+    bat \\
     jq \\
     build-essential \\
     && rm -rf /var/lib/apt/lists/*

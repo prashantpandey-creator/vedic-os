@@ -722,7 +722,7 @@ with tab4:
             st.markdown("---")
 
         if "omni_intent_val" not in st.session_state:
-            st.session_state.omni_intent_val = "Run 'npm test', find the failing tests, and fix the codebase."
+            st.session_state.omni_intent_val = ""
             
         col_t1, col_t2 = st.columns([5, 1])
         with col_t1:
@@ -771,7 +771,7 @@ with tab4:
         
         col_s1, col_s2, col_s3 = st.columns(3)
         with col_s1:
-            max_steps = st.slider("Max Autonomous Steps", 1, 30, 10)
+            pass
         with col_s2:
             st.html("<br>")
             st.session_state.hitl_enabled = st.checkbox("🛡️ Require Human Approval", value=True)

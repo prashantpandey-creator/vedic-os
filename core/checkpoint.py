@@ -1,5 +1,5 @@
 import os
-import json
+import orjson
 import time
 
 CHECKPOINT_DIR = ".omni_checkpoints"
@@ -32,7 +32,7 @@ def load_checkpoint(workspace_dir):
         return None
     try:
         with open(latest_file, "r", encoding="utf-8") as f:
-            return json.load(f)
+            return orjson.loads(f.read())
     except Exception:
         return None
 

@@ -16,7 +16,7 @@ class ToolRegistry:
         return """
 Available Tools (Choose ONE per response):
 
-1. run_command
+1. run_command (NOTE: You have access to modern Rust binaries: 'rg' for searching code, 'fdfind' for finding files, and 'batcat' for reading.)
 {"thought": "...", "action": "run_command", "command": "npm test"}
 
 2. edit_file
