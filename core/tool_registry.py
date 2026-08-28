@@ -20,7 +20,7 @@ Available Tools (Choose ONE per response):
 {"thought": "...", "action": "run_command", "command": "npm test"}
 
 2. edit_file
-{"thought": "...", "action": "edit_file", "file": "path", "search": "old text", "replace": "new text"}
+{"thought": "...", "action": "edit_file", "file": "path", "instruction": "Detailed instruction on what to change"}
 
 4. create_artifact (Generate permanent reports, plans, or full files)
 {"thought": "...", "action": "create_artifact", "title": "ArchitecturePlan", "content": "# Markdown Content..."}
