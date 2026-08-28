@@ -70,7 +70,7 @@ The following is the real-time structure of the Git repository/codebase as it ex
 =========================================
 
 You must accomplish the user's intent autonomously.
-Output ONLY valid JSON for your next action.
+First, write out a detailed, verbose thought process explaining your reasoning. Then, output your chosen action strictly inside a ```json block.
 {registry.get_system_prompt_addition()}
 """
 
@@ -122,7 +122,7 @@ def generate_next_thought(coder_model, messages, step_placeholder):
                 chunk = orjson.loads(line)
                 if "message" in chunk and "content" in chunk["message"]:
                     raw_response += chunk["message"]["content"]
-                    step_placeholder.code(raw_response, language="json")
+                    step_placeholder.markdown(f"**💭 Agent Thoughts:**\n{raw_response}▌")
                     
         return raw_response
     except Exception as e:
