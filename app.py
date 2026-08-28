@@ -39,39 +39,18 @@ if not models:
     st.sidebar.error("⚠️ Ollama is not running or no models found. Start Ollama and refresh.")
     st.stop()
 
-st.sidebar.markdown("### Architecture Mode")
-app_mode = st.sidebar.radio("Select Framework Pillar:", [
-    "💬 Standard Chat (Hybrid Non-Transformers)",
-    "🏗️ Code Compiler Manifestor (Vyasa Sandbox)",
-    "🧬 Coding Agent with Harness (Nidra)",
-    "🦅 Omni-Agent (Autonomous Terminal Loop)"
+st.sidebar.markdown("### Navigation")
+st.sidebar.info("Use the **4 tabs** above to move between stages of the Vedic AI Engine — from raw model chat to full autonomous terminal execution.")
+
+# ----------------- Main View -----------------
+tab1, tab2, tab3, tab4 = st.tabs([
+    "💬 Stage 1: Bare Model", 
+    "🏗️ Stage 2: Sandbox Architect", 
+    "🧬 Stage 3: Nidra Harness", 
+    "🦅 Stage 4: Omni-Agent"
 ])
 
-st.sidebar.markdown("### Global Settings")
-selected_model = st.sidebar.selectbox("Default Model", models, index=0)
-system_prompt = st.sidebar.text_area("Global System Prompt", "You are an elite, highly intelligent AI assistant.")
 
-# Active Memory Monitor
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 💾 Active Memory Monitor")
-loaded_models = get_loaded_models()
-
-if not loaded_models:
-    st.sidebar.info("All models unloaded. Zero footprint. 🍃")
-else:
-    for m in loaded_models:
-        name = m.get("name", "Unknown")
-        size_gb = m.get("size", 0) / (1024**3)
-        st.sidebar.warning(f"**{name}**\n\nTaking up **{size_gb:.2f} GB** of RAM")
-
-# Model Details Panel
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🔬 Model Details")
-details = get_model_details(selected_model)
-if details:
-    st.sidebar.markdown(f"**Architecture:** `{details.get('details', {}).get('family', 'Unknown')}`")
-    st.sidebar.markdown(f"**Params:** `{details.get('details', {}).get('parameter_size', 'Unknown')}`")
-    st.sidebar.markdown(f"**Quantization:** `{details.get('details', {}).get('quantization_level', 'Unknown')}`")
 
 def render_vyasa_response(json_plan):
     try:
@@ -87,33 +66,66 @@ def render_vyasa_response(json_plan):
         
     return response
 
-def render_workspace_config():
+@st.cache_data(ttl=300)
+def fetch_github_repos():
+    import subprocess
+    import json
+    try:
+        res = subprocess.run(["gh", "repo", "list", "--json", "nameWithOwner,url", "--limit", "20"], capture_output=True, text=True)
+        if res.returncode == 0:
+            return json.loads(res.stdout)
+    except: pass
+    return []
+
+def render_workspace_config(key_prefix=""):
     st.markdown("### 📁 Workspace Configuration")
     
-    # 1. Cloud Git Mounter
-    git_url = st.text_input("☁️ Quick Mount: Paste a GitHub URL to Clone & Analyze:", placeholder="https://github.com/user/repo.git")
-    if st.button("⬇️ Clone Repository"):
-        import subprocess
-        target_base = os.path.expanduser("~/vedic_workspaces")
-        os.makedirs(target_base, exist_ok=True)
+    import subprocess
+    target_base = os.path.expanduser("~/vedic_workspaces")
+    os.makedirs(target_base, exist_ok=True)
+    
+    # 1. GitHub Account Connector
+    repos = fetch_github_repos()
+    if repos:
+        repo_options = ["(Select a GitHub Repository)"] + [r["nameWithOwner"] for r in repos]
+        selected_repo = st.selectbox("🐙 GitHub Projects (Authenticated via gh CLI):", repo_options, key=f"gh_repo_{key_prefix}")
+        
+        if selected_repo != "(Select a GitHub Repository)":
+            repo_data = next((r for r in repos if r["nameWithOwner"] == selected_repo), None)
+            if repo_data:
+                repo_name = repo_data["nameWithOwner"].split("/")[-1]
+                target_path = os.path.join(target_base, repo_name)
+                
+                col1, col2 = st.columns([1, 3])
+                with col1:
+                    if st.button("🚀 Mount & Resume", key=f"resume_btn_{key_prefix}"):
+                        if not os.path.exists(target_path):
+                            with st.spinner(f"Cloning {repo_name} from GitHub..."):
+                                subprocess.run(["git", "clone", repo_data["url"], target_path], capture_output=True)
+                        st.session_state["workspace_dir"] = target_path
+                        st.rerun()
+                with col2:
+                    if os.path.exists(target_path):
+                        st.success(f"Available locally: `{target_path}`")
+                    else:
+                        st.info(f"Will clone to: `{target_path}`")
+    else:
+        st.info("💡 Install and authenticate `gh` CLI to auto-list your GitHub repositories.")
+    
+    # 2. Cloud Git URL Fallback
+    git_url = st.text_input("☁️ Manual Git Mount (Paste URL):", placeholder="https://github.com/user/repo.git", key=f"git_url_{key_prefix}")
+    if git_url and st.button("⬇️ Clone Repository", key=f"clone_btn_{key_prefix}"):
         repo_name = git_url.split("/")[-1].replace(".git", "") if "/" in git_url else "unknown_repo"
         target_path = os.path.join(target_base, repo_name)
-        
-        if os.path.exists(target_path):
-            st.warning(f"Repository already exists at `{target_path}`.")
-            st.session_state["workspace_dir"] = target_path
-        else:
-            with st.spinner(f"Cloning {repo_name} from GitHub..."):
-                res = subprocess.run(["git", "clone", git_url, target_path], capture_output=True, text=True)
-                if res.returncode == 0:
-                    st.success(f"Successfully cloned into `{target_path}`")
-                    st.session_state["workspace_dir"] = target_path
-                else:
-                    st.error(f"Failed to clone: {res.stderr}")
+        if not os.path.exists(target_path):
+            with st.spinner(f"Cloning {repo_name}..."):
+                subprocess.run(["git", "clone", git_url, target_path], capture_output=True)
+        st.session_state["workspace_dir"] = target_path
+        st.rerun()
                     
-    # 2. Absolute Path Override
+    # 3. Absolute Path Override
     default_dir = st.session_state.get("workspace_dir", os.getcwd())
-    workspace_dir = st.text_input("🎯 Active Directory (Absolute Path)", default_dir)
+    workspace_dir = st.text_input("🎯 Active Directory (Absolute Path)", default_dir, key=f"workspace_dir_{key_prefix}")
     st.session_state["workspace_dir"] = workspace_dir
     
     if not os.path.exists(workspace_dir):
@@ -160,17 +172,28 @@ def render_brain_importer(workspace_dir):
         with col1:
             st.markdown("**Claude Code Memory**")
             claude_dir = CLAUDE_MEMORY_DIR
-            claude_memories = []
+            claude_projects = []
             if os.path.exists(claude_dir):
-                claude_memories = [f for f in os.listdir(claude_dir) if f.endswith('.md')]
+                claude_projects = [d for d in os.listdir(claude_dir) if os.path.isdir(os.path.join(claude_dir, d)) and d.startswith("-")]
             
-            if claude_memories:
-                selected_claude = st.selectbox("Select Claude Memory:", ["(None)"] + claude_memories)
+            if claude_projects:
+                selected_claude = st.selectbox("Select Claude Project:", ["(None)"] + claude_projects)
                 if selected_claude != "(None)" and st.button("📥 Ingest Claude Context"):
-                    with open(os.path.join(claude_dir, selected_claude), 'r') as mf:
-                        raw_context = mf.read()
+                    # Find MEMORY.md or first .md file
+                    target_dir = os.path.join(claude_dir, selected_claude)
+                    md_files = [f for f in os.listdir(target_dir) if f.endswith('.md')]
+                    
+                    if not md_files:
+                        st.error("No .md files found in this Claude project directory.")
+                    else:
+                        mem_file = "MEMORY.md" if "MEMORY.md" in md_files else md_files[0]
+                        with open(os.path.join(target_dir, mem_file), 'r') as mf:
+                            raw_context = mf.read()
+                            
+                        st.info("🧠 Model pre-filling Claude context...")
+                        synthesized_box = st.empty()
+                        intelligent_summary = ""
                         
-                    with st.spinner("🧠 Local LLM is synthesizing Claude's memory..."):
                         import requests
                         from config import OLLAMA_URL, INGEST_MODEL
                         
@@ -178,23 +201,60 @@ def render_brain_importer(workspace_dir):
                             "model": INGEST_MODEL,
                             "messages": [
                                 {"role": "system", "content": "You are a Memory Synthesizer. Read this memory file from Claude Code. Extract the core architectural rules, findings, and context into a highly dense Markdown summary."},
-                                {"role": "user", "content": raw_context[-80000:]}
+                                {"role": "user", "content": raw_context[-12000:]}
                             ],
-                            "stream": False,
-                            "options": {"num_ctx": 32000, "temperature": 0.1}
+                            "stream": True,
+                            "options": {"num_ctx": 4096, "temperature": 0.1}
                         }
                         
-                        res = requests.post(f"{OLLAMA_URL}/api/chat", json=payload).json()
-                        intelligent_summary = res.get("message", {}).get("content", "Failed to summarize.")
-                        
-                        from core.ollama_api import evict_model
-                        evict_model(INGEST_MODEL)
-                        
-                        from core.memory_graph import append_vritti
-                        append_vritti(f"Imported Claude Context: {selected_claude}", "Claude-Code", intelligent_summary, workspace_dir)
-                        st.success(f"✨ Synthesized and ingested {selected_claude} into Memory!")
+                        try:
+                            res = requests.post(f"{OLLAMA_URL}/api/chat", json=payload, stream=True)
+                            for line in res.iter_lines():
+                                if line:
+                                    chunk = json.loads(line)
+                                    if "message" in chunk and "content" in chunk["message"]:
+                                        intelligent_summary += chunk["message"]["content"]
+                                        synthesized_box.markdown(f"**Synthesizing:**\n{intelligent_summary}▌")
+                                        
+                            synthesized_box.markdown(f"**Synthesis Complete:**\n{intelligent_summary}")
+                            
+                            from core.ollama_api import evict_model
+                            evict_model(INGEST_MODEL)
+                            
+                            from core.memory_graph import append_vritti
+                            append_vritti(f"Imported Claude Context: {selected_claude}", "Claude-Code", intelligent_summary, workspace_dir)
+                            st.success(f"✨ Synthesized and ingested {selected_claude} into Memory!")
+                            
+                            # Auto-detect Workspace Directory from Claude slug
+                            # Convert e.g. -Users-badenath-projects-vedic-puran to /Users/badenath/projects/vedic puran
+                            parts = selected_claude.strip("-").split("-")
+                            detected_cwd = None
+                            if len(parts) >= 2:
+                                # Try a few combinations of spaces vs hyphens in the last folder
+                                base_path = "/" + "/".join(parts[:-1])
+                                last_part = parts[-1]
+                                
+                                # 1. Literal translation
+                                p1 = os.path.join(base_path, last_part)
+                                # 2. Space instead of hyphen (common for claude slug)
+                                p2 = os.path.join("/" + "/".join(parts[:-2]), parts[-2] + " " + parts[-1]) if len(parts) >= 3 else p1
+                                
+                                if os.path.exists(p2): detected_cwd = p2
+                                elif os.path.exists(p1): detected_cwd = p1
+                                
+                            if detected_cwd:
+                                st.info(f"📂 Detected active project directory: `{detected_cwd}`")
+                                if st.button(f"🚀 Switch to this Project & Resume", key="claude_resume"):
+                                    st.session_state["workspace_dir"] = detected_cwd
+                                    st.session_state.intent_prompt = f"Resume session from Claude project '{selected_claude}' based on ingested MEMORY."
+                                    st.rerun()
+                            else:
+                                st.warning(f"Could not automatically locate the workspace directory on disk. You may need to set it manually.")
+                                
+                        except Exception as e:
+                            st.error(f"Error streaming Claude synthesis: {e}")
             else:
-                st.info("No Claude memory found in ~/claude-sync/memory/")
+                st.info("No Claude projects found in ~/claude-sync/memory/")
                 
         with col2:
             st.markdown("**Antigravity Transcripts**")
@@ -211,36 +271,81 @@ def render_brain_importer(workspace_dir):
                     if os.path.exists(transcript_path):
                         summary = f"Imported Antigravity Session: {selected_ag}\n"
                         try:
+                            # PRE-FILTER: Don't send massive tool outputs to the LLM.
+                            # Only send the Agent's thoughts and the User's intents.
+                            filtered_transcript = ""
                             with open(transcript_path, 'r') as tf:
-                                # We can read the whole thing, but let's safely take the last 1000 lines 
-                                # to fit in Mamba's 32k window
-                                raw_lines = tf.readlines()[-1000:]
-                                raw_transcript = "".join(raw_lines)
+                                lines = tf.readlines()[-100:] # Just last 100 steps
+                                for line in lines:
+                                    try:
+                                        step = json.loads(line)
+                                        t = step.get("type", "")
+                                        if t in ["USER_INPUT", "PLANNER_RESPONSE", "SYSTEM_MESSAGE"]:
+                                            content = str(step.get("content", ""))
+                                            # Truncate massive file reads from planner responses
+                                            if len(content) > 1000: content = content[:1000] + "...[truncated]"
+                                            filtered_transcript += f"\n[{t}]: {content}"
+                                    except: pass
                                 
-                            with st.spinner("🧠 Local LLM is synthesizing Antigravity context..."):
-                                import requests
-                                from config import OLLAMA_URL, INGEST_MODEL
-                                
-                                payload = {
-                                    "model": INGEST_MODEL,
-                                    "messages": [
-                                        {"role": "system", "content": "You are a Memory Synthesizer. Read this JSONL transcript from an advanced AI session. Extract all core architectural decisions, user instructions, and technical context into a clean, concise Markdown summary. Do not output JSON."},
-                                        {"role": "user", "content": raw_transcript[-80000:]} # safe cap
-                                    ],
-                                    "stream": False,
-                                    "options": {"num_ctx": 32000, "temperature": 0.1}
-                                }
-                                
-                                res = requests.post(f"{OLLAMA_URL}/api/chat", json=payload).json()
-                                intelligent_summary = res.get("message", {}).get("content", "Failed to summarize.")
-                                
-                                from core.ollama_api import evict_model
-                                evict_model(INGEST_MODEL)
-                                
-                                from core.memory_graph import append_vritti
-                                append_vritti(f"Imported Antigravity Context: {selected_ag}", "Antigravity", intelligent_summary, workspace_dir)
-                                st.success("✨ Local LLM successfully synthesized and ingested the external session!")
-                                
+                            st.info("🧠 Model pre-filling context...")
+                            synthesized_box = st.empty()
+                            intelligent_summary = ""
+                            
+                            import requests
+                            from config import OLLAMA_URL, INGEST_MODEL
+                            
+                            payload = {
+                                "model": INGEST_MODEL,
+                                "messages": [
+                                    {"role": "system", "content": "You are a Memory Synthesizer. Read this filtered transcript from an AI session. Extract the core architectural decisions and user intents into a concise Markdown summary."},
+                                    {"role": "user", "content": filtered_transcript}
+                                ],
+                                "stream": True,
+                                "options": {"num_ctx": 4096, "temperature": 0.1} # Much smaller context window
+                            }
+                            
+                            res = requests.post(f"{OLLAMA_URL}/api/chat", json=payload, stream=True)
+                            for line in res.iter_lines():
+                                if line:
+                                    chunk = json.loads(line)
+                                    if "message" in chunk and "content" in chunk["message"]:
+                                        intelligent_summary += chunk["message"]["content"]
+                                        synthesized_box.markdown(f"**Synthesizing:**\n{intelligent_summary}▌")
+                            
+                            synthesized_box.markdown(f"**Synthesis Complete:**\n{intelligent_summary}")
+                            
+                            from core.ollama_api import evict_model
+                            evict_model(INGEST_MODEL)
+                            
+                            from core.memory_graph import append_vritti
+                            append_vritti(f"Imported Antigravity Context: {selected_ag}", "Antigravity", intelligent_summary, workspace_dir)
+                            st.success("✨ Successfully ingested into Local Memory!")
+                            
+                            # Auto-detect Workspace Directory from tool calls
+                            detected_cwd = None
+                            try:
+                                with open(transcript_path, 'r') as tf:
+                                    cwds = {}
+                                    for line in tf:
+                                        if '"Cwd"' in line:
+                                            try:
+                                                step = json.loads(line)
+                                                for call in step.get("tool_calls", []):
+                                                    cwd = call.get("args", {}).get("Cwd")
+                                                    if cwd and cwd != "/Users/badenath":
+                                                        cwds[cwd] = cwds.get(cwd, 0) + 1
+                                            except: pass
+                                    if cwds:
+                                        detected_cwd = max(cwds, key=cwds.get)
+                            except: pass
+                            
+                            if detected_cwd and os.path.exists(detected_cwd):
+                                st.info(f"📂 Detected active project directory: `{detected_cwd}`")
+                                if st.button(f"🚀 Switch to this Project & Resume"):
+                                    st.session_state["workspace_dir"] = detected_cwd
+                                    st.session_state.intent_prompt = f"Resume session '{selected_ag}' based on the ingested PROJECT_MIND memory."
+                                    st.rerun()
+                                    
                         except Exception as e:
                             st.error(f"Error during intelligent extraction: {e}")
                     else:
@@ -249,11 +354,34 @@ def render_brain_importer(workspace_dir):
                 st.info("No Antigravity sessions found.")
 
 # ----------------- Main View -----------------
+tab1, tab2, tab3, tab4 = st.tabs([
+    "💬 Stage 1: Bare Model", 
+    "🏗️ Stage 2: Sandbox Architect", 
+    "🧬 Stage 3: Nidra Harness", 
+    "🦅 Stage 4: Omni-Agent"
+])
 
-st.title(app_mode)
-st.markdown("---")
 
-if app_mode == "💬 Standard Chat (Hybrid Non-Transformers)":
+# Sidebar globals used by Stage 1 chat and Stage 2 Architect
+selected_model = st.sidebar.selectbox("Default Model", models, index=0)
+system_prompt = st.sidebar.text_area("Global System Prompt", "You are an elite, highly intelligent AI assistant.")
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 💾 VRAM Monitor")
+loaded_models = get_loaded_models()
+if not loaded_models:
+    st.sidebar.info("All models unloaded. Zero footprint. 🍃")
+else:
+    for m in loaded_models:
+        name = m.get("name", "Unknown")
+        size_gb = m.get("size", 0) / (1024**3)
+        st.sidebar.warning(f"**{name}** — {size_gb:.2f} GB")
+st.sidebar.markdown("---")
+details = get_model_details(selected_model)
+if details:
+    st.sidebar.markdown(f"**Arch:** `{details.get('details', {}).get('family', 'Unknown')}` · **Quant:** `{details.get('details', {}).get('quantization_level', 'Unknown')}`")
+
+
+with tab1:
     if st.button("Clear Chat"):
         st.session_state.messages = []
         st.rerun()
@@ -333,20 +461,19 @@ if app_mode == "💬 Standard Chat (Hybrid Non-Transformers)":
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         st.rerun()
 
-elif app_mode == "🧬 Coding Agent with Harness (Nidra)":
+with tab3:
     st.markdown("Use this mode to **autonomously modify an existing codebase**. Mamba-2 (SSM) scans the filesystem, your selected Genius Coder writes the unified diff, and the Nidra Harness logs the memory graph.")
     
-    workspace_dir = render_workspace_config()
+    workspace_dir = render_workspace_config(key_prefix='tab3')
     if not workspace_dir: st.stop()
     
     col1, col2 = st.columns(2)
     with col1:
-        med_idx = models.index(INGEST_MODEL) if INGEST_MODEL in models else 0
-        meditate_model = st.selectbox("🧘 Meditate Layer (Scanner)", models, index=med_idx)
+        st.info(f"🧘 **Meditate Layer (Scanner):** `{INGEST_MODEL}`")
+        meditate_model = INGEST_MODEL
     with col2:
-        target = FAST_MODEL
-        cod_idx = models.index(target) if target in models else (models.index("qwen2.5:32b") if HEAVY_MODEL in models else 0)
-        coder_model = st.selectbox("🧠 Coder Layer (Fast Abliterated)", models, index=cod_idx)
+        st.info(f"🧠 **Coder Layer (Abliterated):** `{FAST_MODEL}`")
+        coder_model = FAST_MODEL
 
     intent_prompt = st.text_area("What do you want to change or fix?", "Add a dark mode toggle to the sidebar in app.py")
     
@@ -382,10 +509,10 @@ elif app_mode == "🧬 Coding Agent with Harness (Nidra)":
                 with open(memory_path, "r", encoding="utf-8") as f:
                     st.markdown(f.read())
 
-elif app_mode == "🦅 Omni-Agent (Autonomous Terminal Loop)":
+with tab4:
     st.markdown("This is the **Next-Gen Agentic Loop**. Mamba-2 ingests the codebase, and Qwen iterates through your terminal.")
     
-    workspace_dir = render_workspace_config()
+    workspace_dir = render_workspace_config(key_prefix='tab4')
     if not workspace_dir: st.stop()
     render_file_tree(workspace_dir)
     render_brain_importer(workspace_dir)
@@ -393,18 +520,18 @@ elif app_mode == "🦅 Omni-Agent (Autonomous Terminal Loop)":
     from agents.omni_state_machine import init_omni_loop, generate_next_thought, parse_action
     from core.terminal_engine import TerminalEngine
     from core.tool_registry import ToolRegistry
+    from core.checkpoint import save_checkpoint, load_checkpoint, clear_checkpoints, build_phase_summary
     from core.file_system import apply_search_replace
     from core.memory_graph import append_vritti
     import json
     
     col1, col2 = st.columns(2)
     with col1:
-        med_idx = models.index(INGEST_MODEL) if INGEST_MODEL in models else 0
-        meditate_model = st.selectbox("🐍 SSM Ingestion Engine (Mamba)", models, index=med_idx)
+        st.info(f"🐍 **SSM Ingestion Engine:** `{INGEST_MODEL}`")
+        meditate_model = INGEST_MODEL
     with col2:
-        target = FAST_MODEL
-        cod_idx = models.index(target) if target in models else (models.index("qwen2.5:32b") if HEAVY_MODEL in models else 0)
-        coder_model = st.selectbox("🦅 Omni-Agent Typist (Llama-3 Abliterated)", models, index=cod_idx)
+        st.info(f"🦅 **Omni-Agent Typist:** `{FAST_MODEL}`")
+        coder_model = FAST_MODEL
 
     # State Machine Initialization
     if "omni_state" not in st.session_state:
@@ -417,24 +544,105 @@ elif app_mode == "🦅 Omni-Agent (Autonomous Terminal Loop)":
         st.session_state.hitl_enabled = True
 
     if st.session_state.omni_state == "IDLE":
-        intent_prompt = st.text_area("What do you want the Omni-Agent to do?", "Run 'npm test', find the failing tests, and fix the codebase.")
+        # Check for resumable checkpoint
+        existing_cp = load_checkpoint(workspace_dir)
+        if existing_cp:
+            st.warning("📦 **Resumable Session Found!** The agent was previously working on this workspace.")
+            st.info("Intent: _{}_  |  Phase: {} | Step: {}".format(existing_cp.get("intent","?"), existing_cp.get("phase",1), existing_cp.get("step",1)))
+            col_r1, col_r2 = st.columns(2)
+            with col_r1:
+                if st.button("♻️ Resume Previous Session", type="primary"):
+                    st.session_state.omni_messages = existing_cp.get("messages", [])
+                    st.session_state.omni_log = existing_cp.get("log", [])
+                    st.session_state.omni_step = existing_cp.get("step", 1)
+                    st.session_state.action_history = existing_cp.get("action_history", [])
+                    st.session_state.intent_prompt = existing_cp.get("intent", "")
+                    st.session_state.phase = existing_cp.get("phase", 1)
+                    st.session_state.phase_summaries = existing_cp.get("phase_summaries", [])
+                    st.session_state.max_steps = 999
+                    st.session_state.terminal = TerminalEngine(workspace_dir=workspace_dir)
+                    st.session_state.registry = ToolRegistry(workspace_dir, st.session_state.terminal)
+                    st.session_state.omni_state = "GENERATING"
+                    st.rerun()
+            with col_r2:
+                if st.button("🗑️ Discard & Start Fresh"):
+                    clear_checkpoints(workspace_dir)
+                    st.rerun()
+            st.markdown("---")
+
+        if "suggested_intent" not in st.session_state:
+            st.session_state.suggested_intent = "Run 'npm test', find the failing tests, and fix the codebase."
+            
+        col_t1, col_t2 = st.columns([5, 1])
+        with col_t1:
+            intent_prompt = st.text_area("What do you want the Omni-Agent to do?", value=st.session_state.suggested_intent, height=100)
+        with col_t2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("💡 Auto-Suggest"):
+                with st.spinner("Analyzing repo..."):
+                    context_data = ""
+                    for fname in ["README.md", "PROJECT_MIND.md"]:
+                        fpath = os.path.join(workspace_dir, fname)
+                        if os.path.exists(fpath):
+                            with open(fpath, "r") as mf:
+                                context_data += f"\n--- {fname} ---\n" + mf.read()[:5000]
+                    
+                    if not context_data.strip():
+                        # Fallback to reading first 5 files
+                        try:
+                            files = [f for f in os.listdir(workspace_dir) if os.path.isfile(os.path.join(workspace_dir, f)) and not f.startswith(".")]
+                            for f in files[:5]:
+                                with open(os.path.join(workspace_dir, f), "r", errors="ignore") as mf:
+                                    context_data += f"\n--- {f} ---\n" + mf.read()[:1000]
+                        except: pass
+
+                    import requests
+                    from config import OLLAMA_URL, INGEST_MODEL
+                    
+                    payload = {
+                        "model": INGEST_MODEL,
+                        "messages": [
+                            {"role": "system", "content": "You are an AI task suggester. Read the provided repo context and generate EXACTLY 1 actionable, specific sentence for what the AI agent should do next. DO NOT use markdown, DO NOT use bullet points, just output the raw sentence."},
+                            {"role": "user", "content": context_data[-12000:]}
+                        ],
+                        "stream": False,
+                        "options": {"num_ctx": 4096, "temperature": 0.7}
+                    }
+                    try:
+                        res = requests.post(f"{OLLAMA_URL}/api/chat", json=payload).json()
+                        suggestion = res.get("message", {}).get("content", "").strip()
+                        if suggestion:
+                            st.session_state.suggested_intent = suggestion
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Failed to auto-suggest: {e}")
         
-        col_s1, col_s2 = st.columns(2)
+        col_s1, col_s2, col_s3 = st.columns(3)
         with col_s1:
             max_steps = st.slider("Max Autonomous Steps", 1, 30, 10)
         with col_s2:
             st.markdown("<br>", unsafe_allow_html=True)
-            st.session_state.hitl_enabled = st.checkbox("🛡️ Require Human Approval for Terminal Commands", value=True)
+            st.session_state.hitl_enabled = st.checkbox("🛡️ Require Human Approval", value=True)
+        with col_s3:
+            st.markdown("<br>", unsafe_allow_html=True)
+            long_running = st.checkbox("♾️ Long-Running Harness (Unlimited)", value=False)
         
         if st.button("🚀 Launch Autonomous Loop", type="primary"):
-            with st.spinner("🐍 Mamba is ingesting codebase and generating blueprint..."):
-                messages, blueprint = init_omni_loop(intent_prompt, meditate_model, coder_model, workspace_dir)
+            status_box = st.empty()
+            with st.spinner("Initializing Phase 1..."):
+                messages, blueprint = init_omni_loop(intent_prompt, meditate_model, coder_model, workspace_dir, status_container=status_box)
                 st.session_state.omni_messages = messages
                 st.session_state.omni_bp = blueprint
                 st.session_state.terminal = TerminalEngine(workspace_dir=workspace_dir)
                 st.session_state.registry = ToolRegistry(workspace_dir, st.session_state.terminal)
                 st.session_state.intent_prompt = intent_prompt
-                st.session_state.max_steps = max_steps
+                st.session_state.phase = 1
+                st.session_state.phase_summaries = []
+                if long_running:
+                    st.session_state.max_steps = 999  # effectively unlimited
+                    st.session_state.hitl_enabled = False
+                else:
+                    st.session_state.max_steps = max_steps
                 st.session_state.omni_state = "GENERATING"
                 st.rerun()
 
@@ -474,9 +682,41 @@ elif app_mode == "🦅 Omni-Agent (Autonomous Terminal Loop)":
         # Handle current state
         if st.session_state.omni_state == "GENERATING":
             if st.session_state.omni_step > st.session_state.max_steps:
-                st.error("Max steps reached. Terminating loop.")
-                st.session_state.omni_state = "DONE"
-                st.rerun()
+                current_phase = st.session_state.get("phase", 1)
+                
+                if st.session_state.max_steps >= 999:
+                    # LONG-RUNNING MODE: Phase transition instead of termination
+                    phase_summary = build_phase_summary(st.session_state.omni_log)
+                    if "phase_summaries" not in st.session_state:
+                        st.session_state.phase_summaries = []
+                    st.session_state.phase_summaries.append(phase_summary)
+                    
+                    # Save checkpoint before phase transition
+                    save_checkpoint(workspace_dir, dict(st.session_state))
+                    
+                    # Re-ingest codebase with fresh eyes (files may have changed!)
+                    st.info("♻️ Phase {} complete. Re-ingesting codebase for Phase {}...".format(current_phase, current_phase + 1))
+                    status_box = st.empty()
+                    messages, blueprint = init_omni_loop(st.session_state.intent_prompt, meditate_model, coder_model, workspace_dir, status_container=status_box)
+                    
+                    # Inject prior phase summaries into the new system prompt
+                    prior_context = "\n".join(["Phase {}: {}".format(i+1, s) for i, s in enumerate(st.session_state.phase_summaries)])
+                    messages[0]["content"] += "\n\nPRIOR PHASE SUMMARIES (your own earlier work):\n" + prior_context
+                    
+                    st.session_state.omni_messages = messages
+                    st.session_state.omni_log = []
+                    st.session_state.omni_step = 1
+                    st.session_state.action_history = []
+                    st.session_state.phase = current_phase + 1
+                    st.session_state.max_steps = 999  # keep going
+                    st.info("♻️ Phase {} -> Phase {}. Fresh context window, persistent memory.".format(current_phase, current_phase + 1))
+                    st.rerun()
+                else:
+                    # Normal mode: terminate
+                    save_checkpoint(workspace_dir, dict(st.session_state))
+                    st.error("Max steps reached. Session checkpointed.")
+                    st.session_state.omni_state = "DONE"
+                    st.rerun()
                 
             st.write(f"🦅 **[STEP {st.session_state.omni_step}/{st.session_state.max_steps}]** Thinking...")
             step_container = st.container()
@@ -538,6 +778,9 @@ elif app_mode == "🦅 Omni-Agent (Autonomous Terminal Loop)":
                 
                 st.session_state.omni_messages.append({"role": "user", "content": result_obj.get("msg", "")})
                 st.session_state.omni_step += 1
+                # Auto-checkpoint every 5 steps
+                if st.session_state.omni_step % 5 == 0:
+                    save_checkpoint(workspace_dir, dict(st.session_state))
                 st.rerun()
 
         elif st.session_state.omni_state == "AWAITING_APPROVAL":
@@ -589,7 +832,7 @@ elif app_mode == "🦅 Omni-Agent (Autonomous Terminal Loop)":
                 st.toast("Feedback injected into Agent's memory!")
 
 
-else:
+with tab2:
     st.markdown("Describe an app below. The **Architect** will design it, and the **Coder** will manifest it into the sandbox.")
     app_prompt = st.text_area("What do you want to build?", "Build a simple weather dashboard with an API route to fetch current weather data")
     

@@ -33,9 +33,16 @@ def run_nidra_pipeline(intent_prompt, meditate_model, coder_model, status, strea
     # 2. Read Context & Memory
     status.write(f"📂 **[CONTEXT]** Found Vrittis (Threads): `{', '.join(files)}`. Loading into {coder_model}...")
     context = ""
+    budget = 8000  # Total char budget across ALL files — prevents context overflow
     for f in files:
-        with open(os.path.join(workspace_dir, f), "r", encoding="utf-8") as file:
-            context += f"\n--- {f} ---\n{file.read()[:2000]}\n"
+        try:
+            with open(os.path.join(workspace_dir, f), "r", encoding="utf-8") as file:
+                chunk = file.read()[:budget]
+                context += f"\n--- {f} ---\n{chunk}\n"
+                budget -= len(chunk)
+                if budget <= 0: break
+        except Exception:
+            pass
             
     memory = read_compressed_memory(workspace_dir)
             

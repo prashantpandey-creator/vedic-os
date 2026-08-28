@@ -42,15 +42,8 @@ ARCHITECTURAL BLUEPRINT:
 {blueprint}
 
 You must accomplish the user's intent autonomously.
-Output ONLY valid JSON for your next action. Choose ONE action per response:
-1. Run a terminal command (e.g. to run tests, list files, or start a build).
-2. Edit a file.
-3. Finish the task.
-
-Format MUST be exactly one of these:
-{{"thought": "reasoning", "action": "run_command", "command": "npm test"}}
-{{"thought": "reasoning", "action": "edit_file", "file": "path", "search": "exact old text", "replace": "new text"}}
-{{"thought": "reasoning", "action": "done"}}
+Output ONLY valid JSON for your next action.
+{registry.get_system_prompt_addition()}
 """
 
     messages = [
@@ -65,11 +58,32 @@ Format MUST be exactly one of these:
     return messages, blueprint
 
 def generate_next_thought(coder_model, messages, step_placeholder):
+    # --- SLIDING WINDOW COMPACTION ---
+    # Keep: system prompt (messages[0]) + last 6 messages (3 turn pairs)
+    # Compress everything in between into a single summary message
+    MAX_CONTEXT_MESSAGES = 10  # system + 4 turn pairs + buffer
+    
+    if len(messages) > MAX_CONTEXT_MESSAGES:
+        system_msg = messages[0]
+        old_turns = messages[1:-6]
+        recent = messages[-6:]
+        
+        summary = "PRIOR CONTEXT SUMMARY (older steps compressed to save memory):\n"
+        for msg in old_turns:
+            role = msg["role"]
+            content = msg["content"][:200]
+            summary += f"- [{role}]: {content}...\n"
+        
+        messages.clear()
+        messages.append(system_msg)
+        messages.append({"role": "user", "content": summary})
+        messages.extend(recent)
+    
     coder_payload = {
         "model": coder_model,
         "messages": messages,
         "stream": True,
-        "options": {"temperature": 0.0}
+        "options": {"temperature": 0.0, "num_ctx": 8192}
     }
     
     try:
@@ -87,14 +101,55 @@ def generate_next_thought(coder_model, messages, step_placeholder):
         return str(e)
 
 def parse_action(raw_response):
-    json_str = raw_response
-    if "```json" in json_str: json_str = json_str.split("```json")[1].split("```")[0].strip()
-    elif "```" in json_str: json_str = json_str.split("```")[1].split("```")[0].strip()
-    else:
-        match = re.search(r'\{\s*"thought".*?\}', json_str, re.DOTALL)
-        if match: json_str = match.group(0)
-        
-    try:
-        return json.loads(json_str)
-    except:
-        return {"action": "error", "error": "Failed to parse JSON."}
+    """
+    Extracts and parses a JSON action from raw model output.
+    Handles: clean JSON, ```json blocks, bare ``` blocks, 
+    inline JSON with surrounding prose, and multiline JSON.
+    """
+    if not raw_response or not raw_response.strip():
+        return {"action": "error", "error": "Empty model response."}
+    
+    text = raw_response.strip()
+    
+    # 1. Try markdown code fence first
+    for fence in ["```json", "```"]:
+        if fence in text:
+            try:
+                inner = text.split(fence)[1].split("```")[0].strip()
+                return json.loads(inner)
+            except Exception:
+                pass
+    
+    # 2. Brace-counting extractor — handles multiline JSON
+    start = text.find("{")
+    if start != -1:
+        depth = 0
+        in_string = False
+        escape_next = False
+        for i, ch in enumerate(text[start:], start):
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == "\\" and in_string:
+                escape_next = True
+                continue
+            if ch == '"':
+                in_string = not in_string
+            if not in_string:
+                if ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        candidate = text[start:i+1]
+                        try:
+                            return json.loads(candidate)
+                        except Exception:
+                            # Try collapsing whitespace (fixes newlines inside string values)
+                            try:
+                                collapsed = " ".join(candidate.split())
+                                return json.loads(collapsed)
+                            except Exception:
+                                break
+    
+    return {"action": "error", "error": f"Could not parse JSON from: {text[:200]}"}

@@ -1,6 +1,5 @@
 import requests
-
-OLLAMA_URL = "http://127.0.0.1:11434"
+from config import OLLAMA_URL
 
 def get_models():
     try:

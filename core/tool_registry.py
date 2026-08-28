@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import subprocess
 import requests
 from core.file_system import apply_search_replace
@@ -88,8 +89,17 @@ Available Tools (Choose ONE per response):
         elif action == "invoke_subagent":
             role = action_data.get("role", "subagent")
             task = action_data.get("task", "")
-            # Headless autonomous mini-loop for the subagent
+            
+            # VRAM Safety Handoff: evict main model before spawning subagent
+            if main_model and main_model != fast_model:
+                evict_model(main_model)
+                
             sub_msg, sub_log = self._run_headless_subagent(role, task, fast_model)
+            
+            # Evict subagent and let main model reload
+            if main_model and main_model != fast_model:
+                evict_model(fast_model)
+                
             return {"type": "subagent", "role": role, "task": task, "log": sub_log, "msg": f"Subagent '{role}' completed task. Result:\\n{sub_msg}"}
             
         return {"type": "error", "msg": f"Unknown action: {action}"}
