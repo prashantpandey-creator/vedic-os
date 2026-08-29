@@ -3,9 +3,21 @@ import json
 import re
 import subprocess
 import requests
-from core.file_system import apply_search_replace
+from core.file_system import apply_search_replace, write_verified
 from core.ollama_api import OLLAMA_URL, evict_model
-from config import FAST_MODEL
+from config import FAST_MODEL, EDITOR_MODEL
+
+def extract_code(text):
+    """Pull the code out of a model's ```-fenced answer. Single copy — cli.py and
+    backend/main.py each had their own before."""
+    match = re.search(r'```[a-zA-Z]*\n(.*?)\n```', text, re.DOTALL)
+    if match:
+        return match.group(1)
+    match = re.search(r'```(.*?)```', text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return text
+
 
 class ToolRegistry:
     def __init__(self, workspace_dir, terminal_engine):
@@ -16,22 +28,28 @@ class ToolRegistry:
         return """
 Available Tools (Choose ONE per response):
 
-1. run_command (NOTE: You have access to modern Rust binaries: 'rg', 'fdfind', 'batcat'. WARNING: Each command runs in a fresh shell. You cannot 'cd' and expect it to persist to the next step. Chain commands with &&.)
+1. run_command (You have modern Rust binaries: 'rg', 'fdfind', 'batcat'. A bare 'cd <dir>' persists across steps. Anything else runs in a fresh shell rooted at the current directory, so 'cd sub && npm test' works too.)
 {"thought": "...", "action": "run_command", "command": "npm test"}
 
-2. edit_file
-{"thought": "...", "action": "edit_file", "file": "path", "search": "old text", "replace": "new text"}
+2. edit_file — PREFERRED: exact search/replace. 'search' must be text copied verbatim from the file.
+{"thought": "...", "action": "edit_file", "file": "path", "search": "def old():\\n    pass", "replace": "def new():\\n    return 1"}
 
-4. create_artifact (Generate permanent reports, plans, or full files)
+3. edit_file (fallback: whole-file rewrite by a second model). Only use when the change is too sweeping to express as search/replace — it rewrites the ENTIRE file and is rejected if the result is truncated.
+{"thought": "...", "action": "edit_file", "file": "path", "instruction": "Detailed instruction on what to change"}
+
+4. create_file (Write a NEW file. Fails if the file already exists — use edit_file for existing files.)
+{"thought": "...", "action": "create_file", "file": "src/utils.py", "content": "def helper():\\n    return 1"}
+
+5. create_artifact (Generate permanent reports, plans, or full files)
 {"thought": "...", "action": "create_artifact", "title": "ArchitecturePlan", "content": "# Markdown Content..."}
 
-5. invoke_subagent (Spawn a fast background agent to do research or recursive tasks)
+6. invoke_subagent (Spawn a fast background agent to do research or recursive tasks)
 {"thought": "...", "action": "invoke_subagent", "role": "researcher", "task": "Find all API routes returning 404"}
 
-6. create_pull_request (Push local edits to a new branch and raise a PR on GitHub)
+7. create_pull_request (Push local edits to a new branch and raise a PR on GitHub)
 {"thought": "...", "action": "create_pull_request", "branch_name": "fix-auth-bug", "title": "Fix Auth Bug", "body": "Fixed the token expiration issue."}
 
-7. done
+8. done
 {"thought": "...", "action": "done"}
 """
 
@@ -46,20 +64,35 @@ Available Tools (Choose ONE per response):
         elif action == "create_file":
             filepath = action_data.get("file")
             content = action_data.get("content", "")
-            import os
             full_path = os.path.join(self.workspace_dir, filepath)
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            with open(full_path, "w", encoding="utf-8") as f:
-                f.write(content)
+            if os.path.exists(full_path):
+                return {"type": "error", "msg": f"create_file refused: {filepath} already exists. Use edit_file."}
+            parent = os.path.dirname(full_path)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            try:
+                # New file, so old_code is "" — the syntax gate still applies.
+                write_verified(full_path, content, "", filepath)
+            except Exception as e:
+                if os.path.exists(full_path):
+                    os.remove(full_path)
+                return {"type": "error", "msg": f"create_file failed: {e}"}
             return {"type": "edit", "file": filepath, "diff": "File created.", "msg": f"File {filepath} created successfully."}
-            
+
         elif action == "edit_file":
             filepath = action_data.get("file")
             try:
-                diff_str = apply_search_replace(filepath, action_data.get("search", ""), action_data.get("replace", ""), self.workspace_dir)
-                return {"type": "edit", "file": filepath, "diff": diff_str, "msg": f"File {filepath} edited successfully."}
+                if action_data.get("search"):
+                    diff_str = apply_search_replace(
+                        filepath, action_data["search"], action_data.get("replace", ""), self.workspace_dir
+                    )
+                elif action_data.get("instruction"):
+                    diff_str = self._rewrite_file_with_editor_model(filepath, action_data["instruction"])
+                else:
+                    return {"type": "error", "msg": "edit_file needs either 'search'+'replace' or 'instruction'."}
+                return {"type": "edit", "file": filepath, "diff": diff_str, "msg": f"File {filepath} edited successfully.\nDiff:\n```diff\n{diff_str[:2000]}\n```"}
             except Exception as e:
-                return {"type": "error", "msg": f"Edit failed: {e}. Fix search block."}
+                return {"type": "error", "msg": f"Edit failed: {e}"}
                 
         elif action == "create_artifact":
             title = action_data.get("title", "artifact").replace(" ", "_")
@@ -104,15 +137,45 @@ Available Tools (Choose ONE per response):
             if main_model and main_model != fast_model:
                 evict_model(main_model)
                 
-            sub_msg, sub_log = self._run_headless_subagent(role, task, fast_model)
-            
+            sub_msg, sub_log, ok = self._run_headless_subagent(role, task, fast_model)
+
             # Evict subagent and let main model reload
             if main_model and main_model != fast_model:
                 evict_model(fast_model)
-                
-            return {"type": "subagent", "role": role, "task": task, "log": sub_log, "msg": f"Subagent '{role}' completed task. Result:\\n{sub_msg}"}
+
+            verb = "completed task" if ok else "FAILED"
+            return {"type": "subagent", "role": role, "task": task, "log": sub_log,
+                    "msg": f"Subagent '{role}' {verb}. Result:\n{sub_msg}"}
             
         return {"type": "error", "msg": f"Unknown action: {action}"}
+
+    def _rewrite_file_with_editor_model(self, filepath, instruction, model=EDITOR_MODEL):
+        """
+        Whole-file rewrite by the small editor model.
+
+        This used to live duplicated in cli.py and backend/main.py, writing the
+        model's output straight to disk with no check. It now returns through
+        write_verified(), which reverts on syntax error and rejects truncation.
+        """
+        full_path = os.path.join(self.workspace_dir, filepath)
+        with open(full_path, "r", encoding="utf-8") as f:
+            old_code = f.read()
+
+        prompt = (
+            f"Instruction: {instruction}\n\nCURRENT CODE:\n```\n{old_code}\n```\n\n"
+            "Rewrite the code to fulfill the instruction. Output ONLY the complete "
+            "updated code inside ``` blocks. Do not omit any part of the file."
+        )
+        res = requests.post(
+            f"{OLLAMA_URL}/api/chat",
+            json={"model": model, "messages": [{"role": "user", "content": prompt}], "stream": False},
+            timeout=300,
+        ).json()
+        if "error" in res:
+            raise ValueError(f"Editor model '{model}' failed: {res['error']}")
+
+        new_code = extract_code(res.get("message", {}).get("content", ""))
+        return write_verified(full_path, new_code, old_code, filepath)
 
     def _run_headless_subagent(self, role, task, model):
         # A lightweight 3-step loop purely for research/grep
@@ -121,32 +184,45 @@ Available Tools (Choose ONE per response):
         
         sub_log = []
         result_msg = "Task failed to yield a specific result."
-        
+        ok = False
+
         for _ in range(3):
             try:
-                res = requests.post(f"{OLLAMA_URL}/api/chat", json={"model": model, "messages": messages, "options": {"temperature": 0.0}}).json()
+                # "stream": False is REQUIRED — Ollama streams NDJSON by default and
+                # .json() then dies on "Extra data: line 2". Without it this loop
+                # crashed on its first request every single time.
+                res = requests.post(
+                    f"{OLLAMA_URL}/api/chat",
+                    json={"model": model, "messages": messages, "stream": False,
+                          "options": {"temperature": 0.0}},
+                    timeout=300,
+                ).json()
+                if "error" in res:
+                    result_msg = f"Subagent model '{model}' unavailable: {res['error']}"
+                    break
                 raw = res.get("message", {}).get("content", "")
                 messages.append({"role": "assistant", "content": raw})
-                
+
                 # Parse JSON quickly
                 match = re.search(r'\{\s*"action".*?\}', raw, re.DOTALL)
-                if match: 
+                if match:
                     data = json.loads(match.group(0))
-                else: 
-                    data = {"action": "done", "result": raw} # fallback
-                    
+                else:
+                    data = {"action": "done", "result": raw}  # fallback
+
                 act = data.get("action")
                 if act == "done":
                     result_msg = data.get("result", raw)
+                    ok = True
                     sub_log.append(f"Subagent concluded: {result_msg}")
                     break
                 elif act == "run_command":
                     cmd = data.get("command", "")
                     out = self.terminal.execute(cmd)
-                    sub_log.append(f"$ {cmd}\\n> {out[:100]}...")
+                    sub_log.append(f"$ {cmd}\n> {out[:100]}...")
                     messages.append({"role": "user", "content": f"Output: {out}"})
             except Exception as e:
                 result_msg = f"Subagent crashed: {e}"
                 break
-                
-        return result_msg, sub_log
+
+        return result_msg, sub_log, ok
