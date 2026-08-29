@@ -43,5 +43,10 @@ EMBED_MODEL = os.getenv("EMBED_MODEL", "granite4:3b-h")
 # embedder (nomic-embed-text, mxbai-embed-large), which separates properly.
 MEMORY_MIN_SIM = float(os.getenv("MEMORY_MIN_SIM", "0.80"))
 
+# Where the loop-detection escalation goes when ANTHROPIC_API_KEY is set. Must be
+# a litellm model id — "claude/claude-3-5-sonnet" (the old hardcoded value) is not
+# one: litellm's prefix is "anthropic/", not "claude/".
+ESCALATION_MODEL = os.getenv("ESCALATION_MODEL", "anthropic/claude-sonnet-4-5")
+
 # Vision model for visual_debug. Not pulled by default — `ollama pull llama3.2-vision`.
 VISION_MODEL = os.getenv("VISION_MODEL", "llama3.2-vision")

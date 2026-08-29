@@ -1,4 +1,4 @@
-from config import INGEST_MODEL, EDITOR_MODEL, FAST_MODEL
+from config import INGEST_MODEL, EDITOR_MODEL, FAST_MODEL, ESCALATION_MODEL
 import os
 import sys
 import json
@@ -81,7 +81,7 @@ def run_cli():
                     # GUARDRAIL: Only escalate if we are explicitly allowed to leave Local Mode (API keys present)
                     if os.environ.get("ANTHROPIC_API_KEY"):
                         console.print("[bold red]🚨 RECURSIVE LOOP DETECTED. ESCALATING TO CLAUDE 3.5 SONNET...[/bold red]")
-                        coder_model = "claude/claude-3-5-sonnet"
+                        coder_model = ESCALATION_MODEL
                         action_history.clear()
                         messages.append({"role": "user", "content": "SYSTEM ESCALATION: Your local Llama model got stuck in an infinite loop failing to execute the above tool. You are Claude 3.5 Sonnet. Read the tracebacks, break the loop, and solve the problem."})
                         step += 1

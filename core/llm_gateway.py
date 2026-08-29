@@ -7,7 +7,7 @@ os.environ["OLLAMA_API_BASE"] = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434"
 # Providers this project routes to. Anything whose first path segment is NOT in
 # here is assumed to be a local Ollama tag.
 KNOWN_PROVIDERS = {
-    "ollama", "ollama_chat", "openai", "anthropic", "claude", "gemini",
+    "ollama", "ollama_chat", "openai", "anthropic", "gemini",
     "openrouter", "cerebras", "azure", "vertex_ai", "bedrock", "together_ai",
     "deepseek", "mistral", "xai",
 }
@@ -32,6 +32,12 @@ def normalize_model(model_name: str) -> str:
     head = model_name.split("/", 1)[0].lower()
     if head in KNOWN_PROVIDERS:
         return model_name
+    # "claude/..." reads like a provider but litellm has no such prefix — it is
+    # "anthropic/". The escalation path hardcoded "claude/claude-3-5-sonnet", so
+    # escalation stayed dead even after bare Ollama tags were fixed. Remap rather
+    # than silently sending it to Ollama, which would be a worse wrong answer.
+    if head == "claude":
+        return "anthropic/" + model_name.split("/", 1)[1]
     return f"ollama/{model_name}"
 
 
