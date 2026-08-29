@@ -29,7 +29,19 @@ def clear_all_vram_except(allowed_models: list):
         if model not in allowed_models:
             evict_model(model)
             
-LEDGER_MARK = "[ACTIONS ALREADY TAKEN — these are done; do not repeat them]"
+# Wording is load-bearing, not cosmetic. The first version read
+#   "[ACTIONS ALREADY TAKEN — these are done; do not repeat them]"
+# and paired each action with its raw result, e.g.
+#   "edit_file: shipping.py  →  File shipping.py edited successfully."
+# The agent read "done" + "successfully" as "the task is solved" and emitted
+# `done` after 4 steps without ever re-running the tests. Measured: 2 of 3
+# end-to-end failures in that arm were exactly this, claiming completion with
+# the tests still red. A tool call succeeding says the WRITE landed, nothing
+# about whether it was correct — so the header now says that outright.
+LEDGER_MARK = ("[HISTORY — actions already attempted this session. "
+               "A tool call that succeeded means only that the call ran; it does NOT mean "
+               "the task is solved. Do not repeat these actions, and do not finish until "
+               "you have VERIFIED the goal yourself.]")
 MAX_LEDGER_ENTRIES = 20
 
 
