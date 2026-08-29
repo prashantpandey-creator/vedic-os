@@ -113,11 +113,72 @@ def apply_search_replace(file_path, search_block, replace_block, workspace_dir="
         raise ValueError(
             f"Empty search block for {file_path}. Supply the exact existing text to replace."
         )
-    if search_block not in old_code:
-        raise ValueError(f"Search block not found in {file_path}. The model hallucinated the search text.")
+    if search_block in old_code:
+        new_code = old_code.replace(search_block, replace_block, 1)
+    else:
+        span = _find_block_ignoring_blank_lines(old_code, search_block)
+        if span is None:
+            # Point at the escape hatch. Without this the model retries
+            # search/replace forever — which is exactly what it did when asked to
+            # ADD a function, because there is no existing text to anchor to.
+            raise ValueError(
+                f"Search block not found in {file_path}.\n"
+                f"The file's ACTUAL content is:\n---\n{old_code[:1200]}\n---\n"
+                f"Either copy those lines byte-for-byte into 'search', or — if you are "
+                f"ADDING new code rather than changing existing code — use the "
+                f"instruction form instead:\n"
+                f'{{"action": "edit_file", "file": "{file_path}", "instruction": '
+                f'"describe the change; the whole file will be rewritten"}}'
+            )
+        s, e = span
+        new_code = old_code[:s] + replace_block + old_code[e:]
 
-    new_code = old_code.replace(search_block, replace_block, 1)
     return write_verified(full_path, new_code, old_code, file_path)
+
+
+def _find_block_ignoring_blank_lines(haystack, needle):
+    """
+    Locate `needle` in `haystack` when the only difference is blank-line count or
+    trailing whitespace. Returns (start, end) char offsets, or None.
+
+    Small models reproduce code almost right and spacing almost never. Measured
+    on the fix_bug acceptance task: the model emitted
+
+        def add(a, b):
+            return a - b
+        <ONE blank line>
+        def multiply(a, b):
+
+    against a PEP8 file with TWO blank lines between functions. Byte-exact
+    matching rejected it, apply_search_replace reported "the model hallucinated
+    the search text", and the agent burned every step retrying an edit that was
+    substantively correct.
+
+    Indentation is deliberately NOT relaxed — it is semantic in Python, and a
+    match that ignored it would apply the edit to the wrong block. Only blank
+    lines between content lines and trailing whitespace are forgiven.
+    """
+    def content_lines(text):
+        return [(i, ln.rstrip()) for i, ln in enumerate(text.split("\n")) if ln.strip()]
+
+    hay = text_lines = haystack.split("\n")
+    h_content = content_lines(haystack)
+    n_content = content_lines(needle)
+    if not n_content:
+        return None
+
+    n_stripped = [ln for _, ln in n_content]
+    for start in range(len(h_content) - len(n_content) + 1):
+        window = [ln for _, ln in h_content[start:start + len(n_content)]]
+        if window != n_stripped:
+            continue
+        first_line = h_content[start][0]
+        last_line = h_content[start + len(n_content) - 1][0]
+        # char offsets: start of first matched line .. end of last matched line
+        s = sum(len(l) + 1 for l in text_lines[:first_line])
+        e = sum(len(l) + 1 for l in text_lines[:last_line]) + len(hay[last_line])
+        return s, e
+    return None
 
 def ingest_repository_to_text(workspace_dir=".", max_chars=100000):
     repo_text = ""

@@ -103,9 +103,6 @@ Available Tools (Choose ONE per response):
         elif action == "revert_checkpoint":
             return self._revert_checkpoint()
         elif action == "create_file":
-            if not self._ask_the_council(action_data):
-                return {"type": "error", "msg": "❌ THE COUNCIL REJECTED YOUR CODE: The code reviewer detected hallucinations or syntax errors in your proposed new file. Please rewrite it carefully."}
-
             filepath = action_data.get("file")
             content = action_data.get("content", "")
             full_path = os.path.join(self.workspace_dir, filepath)
@@ -123,9 +120,6 @@ Available Tools (Choose ONE per response):
                 return {"type": "error", "msg": f"create_file failed: {e}"}
             return {"type": "edit", "file": filepath, "diff": "File created.", "msg": f"File {filepath} created successfully."}
         elif action == "edit_file":
-            if not self._ask_the_council(action_data):
-                return {"type": "error", "msg": "❌ THE COUNCIL REJECTED YOUR CODE: The code reviewer detected hallucinations or syntax errors in your proposed edit. Please rewrite it carefully."}
-
             filepath = action_data.get("file")
             try:
                 if action_data.get("search"):
@@ -271,6 +265,31 @@ Available Tools (Choose ONE per response):
 
     def _ask_the_council(self, action_data):
         """
+        UNWIRED 2026-08-29. Kept for reference; nothing calls it. Do not put it
+        back in front of edit_file/create_file without re-running
+        tests/test_agent_completes_task.py first.
+
+        It gated every write, and it was the single reason the agent could not
+        finish a job. On the fix_bug acceptance task it blocked FIVE consecutive
+        valid edits (steps 3, 5, 7, 9, 11); the agent burned all 12 steps and
+        calc.py ended byte-identical to the fixture — not one character written.
+
+        An earlier pass here cut false rejects from 5/8 to 0/8, but that was
+        measured on eight edits written by hand. Real agent output is longer and
+        messier, and it still got blocked. Improving a gate is not the same as
+        fixing it, and hand-written cases are the confirming case.
+
+        The deeper problem is that it is redundant. Everything it claims to catch
+        is already caught deterministically, a few microseconds later, by code
+        that cannot be wrong about it:
+
+          hallucinated search text -> apply_search_replace raises
+             "Search block not found in calc.py. The model hallucinated the
+              search text."   (observed at step 1 of the same run)
+          syntax error / truncation -> write_verified reverts and rejects
+
+        A 4B model guessing in front of a certainty can only subtract accuracy.
+
         Second-opinion review before an edit runs.
 
         Measured 2026-08-29: the original version rejected 5 of 8 obviously-valid
