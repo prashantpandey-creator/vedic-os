@@ -193,12 +193,13 @@ st.sidebar.markdown("### Navigation")
 st.sidebar.info("Use the **4 tabs** above to move between stages of the Vedic AI Engine — from raw model chat to full autonomous terminal execution.")
 
 # ----------------- Main View -----------------
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "💬 Stage 1: Bare Model", 
     "🏗️ Stage 2: Sandbox Architect", 
     "🧬 Stage 3: Nidra Harness", 
     "🦅 Stage 4: Omni-Agent",
-    "🧠 Model Manager"
+    "🧠 Model Manager",
+    "💻 Live Terminal"
 ])
 
 
@@ -521,6 +522,23 @@ else:
         size_gb = m.get("size", 0) / (1024**3)
         st.sidebar.warning(f"**{name}** — {size_gb:.2f} GB")
 st.sidebar.markdown("---")
+
+st.sidebar.markdown("### ⏪ Time Travel")
+if st.sidebar.button("Undo Last Agent Action", help="Instantly git reset the repository if the agent hallucinated."):
+    import subprocess
+    subprocess.run(["git", "reset", "--hard", "HEAD"], cwd=os.getenv("VEDIC_WORKSPACES", os.getcwd()))
+    subprocess.run(["git", "clean", "-fd"], cwd=os.getenv("VEDIC_WORKSPACES", os.getcwd()))
+    st.sidebar.success("Repo successfully restored to previous state!")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📥 Context Uploader")
+uploaded_files = st.sidebar.file_uploader("Drop PDFs, docs, or logs here", accept_multiple_files=True)
+if uploaded_files:
+    context_text = "\n".join([f.read().decode('utf-8', errors='ignore') for f in uploaded_files])
+    system_prompt += f"\n\n[USER PROVIDED CONTEXT FILES]:\n{context_text}"
+    st.sidebar.success(f"Injected {len(uploaded_files)} files into agent memory!")
+
+st.sidebar.markdown("---")
 details = get_model_details(selected_model)
 if details:
     st.sidebar.markdown(f"**Arch:** `{details.get('details', {}).get('family', 'Unknown')}` · **Quant:** `{details.get('details', {}).get('quantization_level', 'Unknown')}`")
@@ -816,7 +834,19 @@ with tab4:
                     st.warning(f"**⏳ Awaiting Approval for Command: `{log['cmd']}`**")
                 elif log.get('type') == 'edit':
                     st.success(f"📝 Edited `{log['file']}`")
-                    if 'diff' in log: st.code(log['diff'], language="diff")
+                    
+                    # Component 5: Dedicated Diff Viewer with difflib
+                    import difflib
+                    if 'old_content' in log and 'new_content' in log:
+                        diff = list(difflib.unified_diff(
+                            log['old_content'].splitlines(keepends=True),
+                            log['new_content'].splitlines(keepends=True),
+                            fromfile='old', tofile='new'
+                        ))
+                        diff_text = "".join(diff)
+                        st.code(diff_text, language="diff")
+                    elif 'diff' in log:
+                        st.code(log['diff'], language="diff")
                 elif log.get('type') == 'loop_intercept':
                     st.error(log['output'])
                 elif log.get('type') == 'artifact':
