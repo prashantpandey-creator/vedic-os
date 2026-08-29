@@ -75,15 +75,18 @@ def run_cli():
                 
                 # If the exact same action fails 3 times in a row, escalate!
                 if len(action_history) >= 3 and action_history[-1] == action_history[-2] == action_history[-3]:
-                    console.print("[bold red]🚨 RECURSIVE LOOP DETECTED. ESCALATING TO CLAUDE 3.5 SONNET...[/bold red]")
-                    # Hot-swap the brain to Claude
-                    coder_model = "claude/claude-3-5-sonnet"
-                    # Reset the history so it doesn't loop infinitely
-                    action_history.clear()
-                    # Tell Claude exactly what happened
-                    messages.append({"role": "user", "content": "SYSTEM ESCALATION: Your local Llama model got stuck in an infinite loop failing to execute the above tool. You are Claude 3.5 Sonnet. Read the tracebacks, break the loop, and solve the problem."})
-                    step += 1
-                    continue
+                    # GUARDRAIL: Only escalate if we are explicitly allowed to leave Local Mode (API keys present)
+                    if os.environ.get("ANTHROPIC_API_KEY"):
+                        console.print("[bold red]🚨 RECURSIVE LOOP DETECTED. ESCALATING TO CLAUDE 3.5 SONNET...[/bold red]")
+                        coder_model = "claude/claude-3-5-sonnet"
+                        action_history.clear()
+                        messages.append({"role": "user", "content": "SYSTEM ESCALATION: Your local Llama model got stuck in an infinite loop failing to execute the above tool. You are Claude 3.5 Sonnet. Read the tracebacks, break the loop, and solve the problem."})
+                        step += 1
+                        continue
+                    else:
+                        console.print("[bold yellow]⚠️ Loop Detected, but Local Mode is strictly enforced (No API Keys). Asking Human for help...[/bold yellow]")
+                        console.print(f"[bold magenta]❓ Question:[/bold magenta] I am stuck in a recursive error loop. How should I proceed?")
+                        break
 
                 if not action_data or action_data.get("action") == "error":
                     console.print("[red]Malformed JSON from LLM. Retrying...[/red]")
