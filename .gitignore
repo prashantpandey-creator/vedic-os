@@ -18,3 +18,4 @@ logs/
 artifacts/
 WeatherDashboard/
 *.log
+node_modules/
