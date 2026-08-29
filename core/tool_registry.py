@@ -51,10 +51,10 @@ Available Tools (Choose ONE per response):
 7. create_pull_request (Push local edits to a new branch and raise a PR on GitHub)
 {"thought": "...", "action": "create_pull_request", "branch_name": "fix-auth-bug", "title": "Fix Auth Bug", "body": "Fixed the token expiration issue."}
 
-8. git_snapshot (Create an autonomous Git checkpoint/stash before attempting dangerous edits)
+8. git_snapshot (Record a restore point BEFORE a risky edit. Any pre-existing uncommitted changes are stashed, not committed.)
 {"thought": "...", "action": "git_snapshot"}
 
-9. revert_checkpoint (Time Travel: hard reset the codebase to the last git_snapshot if you hallucinated or corrupted the code)
+9. revert_checkpoint (Time Travel: reset the codebase to the snapshot recorded by git_snapshot. Requires a git_snapshot first — it will refuse otherwise. The discarded state is stashed, not destroyed.)
 {"thought": "...", "action": "revert_checkpoint"}
 
 10. query_memory (Search the Vyasa Episodic Brain for solutions to recurring bugs or architecture quirks)
@@ -93,21 +93,10 @@ Available Tools (Choose ONE per response):
 
 
         elif action == "git_snapshot":
-            try:
-                subprocess.run(["git", "add", "."], cwd=self.workspace_dir, check=True, capture_output=True)
-                res = subprocess.run(["git", "commit", "-m", "Omni-Agent Auto-Snapshot"], cwd=self.workspace_dir, capture_output=True, text=True)
-                if res.returncode != 0 and "nothing to commit" not in res.stdout:
-                    return {"type": "error", "msg": f"Snapshot failed: {res.stderr}"}
-                return {"type": "snapshot", "msg": "✅ Codebase snapshot securely saved to Git. You can safely proceed with refactors."}
-            except Exception as e:
-                return {"type": "error", "msg": f"Failed to take snapshot: {e}"}
+            return self._git_snapshot()
 
         elif action == "revert_checkpoint":
-            try:
-                subprocess.run(["git", "reset", "--hard", "HEAD^"], cwd=self.workspace_dir, check=True, capture_output=True)
-                return {"type": "revert", "msg": "⏪ Codebase successfully time-traveled to the previous snapshot! All hallucinations erased."}
-            except Exception as e:
-                return {"type": "error", "msg": f"Failed to revert checkpoint: {e}"}
+            return self._revert_checkpoint()
         elif action == "create_file":
             if not self._ask_the_council(action_data):
                 return {"type": "error", "msg": "❌ THE COUNCIL REJECTED YOUR CODE: The code reviewer detected hallucinations or syntax errors in your proposed new file. Please rewrite it carefully."}
@@ -202,25 +191,138 @@ Available Tools (Choose ONE per response):
         return {"type": "error", "msg": f"Unknown action: {action}"}
 
 
+    # ------------------------------------------------------------------
+    # Git time travel.
+    #
+    # The originals were `git add . && git commit` and `git reset --hard HEAD^`.
+    # Measured 2026-08-29 in a throwaway repo:
+    #   - revert_checkpoint with no snapshot taken ate a real user commit and
+    #     reported "✅ successfully time-traveled to the previous snapshot!"
+    #   - it destroyed an uncommitted edit to a tracked file, no stash, no warning
+    #   - called repeatedly it walked back one real commit per call: 5→4→3→2→1
+    #   - git_snapshot swept another session's untracked files into its commit
+    # HEAD^ is not "the last snapshot"; it is just "one commit ago". The two are
+    # only the same if the snapshot is the most recent commit, which nothing
+    # enforced. Now the snapshot SHA is recorded and reverting targets it.
+    # ------------------------------------------------------------------
+    SNAPSHOT_FILE = ".omni_snapshot"
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.workspace_dir,
+                              capture_output=True, text=True)
+
+    def _git_snapshot(self):
+        if self._git("rev-parse", "--is-inside-work-tree").returncode != 0:
+            return {"type": "error", "msg": "Not a git repository — cannot snapshot."}
+
+        foreign = [l for l in self._git("status", "--porcelain").stdout.splitlines()
+                   if l.strip() and not l.split()[-1].startswith(self.SNAPSHOT_FILE)]
+
+        # `git add .` here used to sweep in whatever else was in the tree —
+        # including another session's in-flight work. Stash instead: the tree is
+        # left clean for the agent, and nothing of anyone else's is committed.
+        if foreign:
+            res = self._git("stash", "push", "--include-untracked",
+                            "-m", "omni-agent: pre-snapshot stash")
+            if res.returncode != 0:
+                return {"type": "error", "msg": f"Could not stash existing changes: {res.stderr}"}
+            stashed = len(foreign)
+        else:
+            stashed = 0
+
+        sha = self._git("rev-parse", "HEAD").stdout.strip()
+        if not sha:
+            return {"type": "error", "msg": "Repository has no commits yet — commit once before snapshotting."}
+        with open(os.path.join(self.workspace_dir, self.SNAPSHOT_FILE), "w") as f:
+            f.write(sha)
+
+        note = (f" {stashed} pre-existing change(s) were stashed first (`git stash pop` to restore) —"
+                f" they are NOT part of the snapshot." if stashed else "")
+        return {"type": "snapshot", "msg":
+                f"✅ Snapshot recorded at {sha[:8]}.{note} revert_checkpoint will return here and no further."}
+
+    def _revert_checkpoint(self):
+        snap_path = os.path.join(self.workspace_dir, self.SNAPSHOT_FILE)
+        if not os.path.exists(snap_path):
+            return {"type": "error", "msg":
+                    "No snapshot to revert to. Call git_snapshot BEFORE the risky edit. "
+                    "Refusing to reset — without a recorded snapshot this would delete "
+                    "the user's own last commit."}
+        sha = open(snap_path).read().strip()
+        if self._git("cat-file", "-e", sha + "^{commit}").returncode != 0:
+            return {"type": "error", "msg": f"Recorded snapshot {sha[:8]} no longer exists. Refusing to reset."}
+
+        if self._git("rev-parse", "HEAD").stdout.strip() == sha and not self._git("status", "--porcelain").stdout.strip():
+            return {"type": "revert", "msg": f"Already at snapshot {sha[:8]} with a clean tree. Nothing to undo."}
+
+        # Park the current state before the hard reset so it is recoverable.
+        self._git("stash", "push", "--include-untracked", "-m", f"omni-agent: pre-revert {sha[:8]}")
+        res = self._git("reset", "--hard", sha)
+        if res.returncode != 0:
+            return {"type": "error", "msg": f"Failed to revert: {res.stderr}"}
+        return {"type": "revert", "msg":
+                f"⏪ Reverted to snapshot {sha[:8]}. The discarded state was stashed first "
+                f"(`git stash list` / `git stash pop` to recover it)."}
+
     def _ask_the_council(self, action_data):
+        """
+        Second-opinion review before an edit runs.
+
+        Measured 2026-08-29: the original version rejected 5 of 8 obviously-valid
+        edits (62%). It was shown only the JSON fragment — no file — and asked
+        whether the edit "contains hallucinations". It cannot check whether the
+        search text exists without the file, so a 4B model answered the
+        unanswerable question with a flat 'REJECT'.
+
+        Two changes: the reviewer now SEES the file, so the question is
+        answerable; and it must name a specific reason to block, because a
+        review that cannot say what is wrong is not a review. Anything
+        ambiguous approves — matching the existing behaviour when the reviewer
+        is unreachable.
+
+        Note this is a second line only. The deterministic checks catch the
+        cases this was built for and catch them exactly: apply_search_replace
+        raises when the search text is not in the file ("the model hallucinated
+        the search text"), and write_verified reverts on syntax error and
+        rejects truncation.
+        """
         import requests
         from config import INGEST_MODEL
         print(f"🏛️ Calling The Council ({INGEST_MODEL}) for Peer Review...")
-        
+
         try:
+            filepath = action_data.get("file", "")
+            try:
+                with open(os.path.join(self.workspace_dir, filepath), "r", encoding="utf-8") as f:
+                    current = f.read()[:8000]
+            except Exception:
+                current = "(file not readable — judge the edit on its own terms)"
+
             prompt = (
-                "You are the Devil's Advocate Code Reviewer. A junior agent has proposed the following file modification:\n"
-                f"```json\n{json.dumps(action_data, indent=2)}\n```\n\n"
-                "Does this code contain obvious hallucinations, syntax errors, or destructive behavior?\n"
-                "Respond with EXACTLY ONE WORD: 'APPROVE' or 'REJECT'."
+                "You are a code reviewer. Approve unless something is definitely wrong.\n\n"
+                f"FILE: {filepath}\n```\n{current}\n```\n\n"
+                f"PROPOSED EDIT:\n```json\n{json.dumps(action_data, indent=2)}\n```\n\n"
+                "Block ONLY if one of these is definitely true:\n"
+                "  - the 'search' text does not appear in the file above\n"
+                "  - the 'replace' text has a clear syntax error\n"
+                "  - the edit deletes or destroys unrelated code\n\n"
+                "Small, ordinary changes (renames, constants, comments, added arguments, "
+                "docstrings) are NORMAL — approve them.\n"
+                "Reply 'APPROVE', or 'REJECT: <the specific reason>'."
             )
             res = requests.post(
                 f"{OLLAMA_URL}/api/chat",
-                json={"model": INGEST_MODEL, "messages": [{"role": "user", "content": prompt}], "stream": False, "options": {"temperature": 0.0}},
-                timeout=30
+                json={"model": INGEST_MODEL, "messages": [{"role": "user", "content": prompt}],
+                      "stream": False, "options": {"temperature": 0.0}},
+                timeout=30,
             ).json()
-            answer = res.get("message", {}).get("content", "").strip().upper()
-            if "REJECT" in answer:
+            answer = res.get("message", {}).get("content", "").strip()
+
+            # Must be an explicit, reasoned rejection. A bare "REJECT", or the word
+            # appearing anywhere in prose, is not enough to destroy a valid edit.
+            head = answer.upper().lstrip("*_# ").split("\n")[0]
+            if head.startswith("REJECT") and len(answer.split(":", 1)[-1].strip()) > 12:
+                print(f"🏛️ Council blocked it: {answer[:160]}")
                 return False
             return True
         except Exception as e:
