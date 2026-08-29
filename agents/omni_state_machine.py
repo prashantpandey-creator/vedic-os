@@ -88,48 +88,9 @@ Finally, after your critique, output your chosen action strictly inside a ```jso
     return messages, blueprint
 
 def generate_next_thought(coder_model, messages, step_placeholder):
-    # --- SLIDING WINDOW COMPACTION ---
-    # Keep: system prompt (messages[0]) + last 6 messages (3 turn pairs)
-    # Compress everything in between into a single summary message
-    MAX_CONTEXT_MESSAGES = 10  # system + 4 turn pairs + buffer
-    
-    if len(messages) > MAX_CONTEXT_MESSAGES:
-        system_msg = messages[0]
-        old_turns = messages[1:-6]
-        recent = messages[-6:]
-        
-        summary = "PRIOR CONTEXT SUMMARY (older steps compressed to save memory):\n"
-        for msg in old_turns:
-            role = msg["role"]
-            content = msg["content"][:200]
-            summary += f"- [{role}]: {content}...\n"
-        
-        messages.clear()
-        messages.append(system_msg)
-        messages.append({"role": "user", "content": summary})
-        messages.extend(recent)
-    
-    coder_payload = {
-        "model": coder_model,
-        "messages": messages,
-        "stream": True,
-        "options": {"temperature": 0.0, "num_ctx": 8192}
-    }
-    
-    try:
-        coder_res = requests.post(f"{OLLAMA_URL}/api/chat", json=coder_payload, stream=True)
-        raw_response = ""
-        for line in coder_res.iter_lines():
-            if line:
-                chunk = orjson.loads(line)
-                if "message" in chunk and "content" in chunk["message"]:
-                    raw_response += chunk["message"]["content"]
-                    if step_placeholder: step_placeholder.markdown(f"**💭 Agent Thoughts:**\n{raw_response}▌")
-                    
-        return raw_response
-    except Exception as e:
-        return str(e)
-
+    from core.llm_gateway import generate_response
+    # Offload everything to the Hybrid Gateway
+    return generate_response(coder_model, messages)
 def parse_action(raw_response):
     """
     Extracts and parses a JSON action from raw model output.
