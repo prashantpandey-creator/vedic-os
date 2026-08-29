@@ -1,6 +1,19 @@
 # Model routing — are we using the non-transformer correctly?
 
-**Short answer: no. The one non-transformer model is on the wrong job.**
+**Short answer: the routing is fine; the JOB is the problem.**
+
+`EDITOR_MODEL = granite4:3b-h` stays exactly where it is (settled below — the SSM
+ties the transformer on real edits and costs less memory to hold resident). What
+should change is that the long job the SSM would win — the LLM blueprint — should
+be **deleted rather than re-routed**, because both architectures produce an unusable
+blueprint: 0 of 5 real filenames cited.
+
+> This heading previously read *"no, the one non-transformer model is on the wrong
+> job"*, which contradicted this document's own revised plan further down. That
+> earlier verdict came from the throughput measurement alone, before anyone checked
+> whether the blueprint was usable. Corrected rather than deleted, so the reasoning
+> stays visible.
+
 Status: measured 2026-08-29. Nothing here is applied yet — this is the plan.
 
 ## What's actually in the box
