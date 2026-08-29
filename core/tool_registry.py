@@ -3,6 +3,8 @@ import json
 import re
 import subprocess
 import requests
+from core.episodic_memory import query_memory, commit_to_memory
+from core.visual_engine import debug_ui
 from core.file_system import apply_search_replace, write_verified
 from core.ollama_api import OLLAMA_URL, evict_model
 from config import FAST_MODEL, EDITOR_MODEL
@@ -49,7 +51,22 @@ Available Tools (Choose ONE per response):
 7. create_pull_request (Push local edits to a new branch and raise a PR on GitHub)
 {"thought": "...", "action": "create_pull_request", "branch_name": "fix-auth-bug", "title": "Fix Auth Bug", "body": "Fixed the token expiration issue."}
 
-8. done
+8. git_snapshot (Create an autonomous Git checkpoint/stash before attempting dangerous edits)
+{"thought": "...", "action": "git_snapshot"}
+
+9. revert_checkpoint (Time Travel: hard reset the codebase to the last git_snapshot if you hallucinated or corrupted the code)
+{"thought": "...", "action": "revert_checkpoint"}
+
+10. query_memory (Search the Vyasa Episodic Brain for solutions to recurring bugs or architecture quirks)
+{"thought": "...", "action": "query_memory", "query": "How do we fix the API route 404 error in this project?"}
+
+11. commit_memory (Permanently save a hard-earned lesson, bug fix, or codebase rule into the Episodic Brain)
+{"thought": "...", "action": "commit_memory", "content": "The Next.js frontend uses Pages router, not App router. Always put API routes in /pages/api/."}
+
+12. visual_debug (Take a screenshot of the Next.js localhost and use Llama Vision to critique the layout and find CSS bugs)
+{"thought": "...", "action": "visual_debug", "url": "http://localhost:3000"}
+
+13. done
 {"thought": "...", "action": "done"}
 """
 
@@ -61,7 +78,40 @@ Available Tools (Choose ONE per response):
             output = self.terminal.execute(cmd)
             return {"type": "command", "cmd": cmd, "output": output, "msg": f"Command Executed.\\nOutput:\\n```\\n{output}\\n```"}
             
+        elif action == "query_memory":
+            res = query_memory(action_data.get("query", ""))
+            return {"type": "memory", "msg": f"🧠 Vyasa Episodic Memory Retrieval:\n\n{res}"}
+
+            
+        elif action == "commit_memory":
+            res = commit_to_memory(action_data.get("content", ""))
+            return {"type": "memory", "msg": res}
+
+        elif action == "visual_debug":
+            res = debug_ui(action_data.get("url", "http://localhost:3000"))
+            return {"type": "vision", "msg": f"👁️ Llama Vision Critique:\n\n{res}"}
+
+
+        elif action == "git_snapshot":
+            try:
+                subprocess.run(["git", "add", "."], cwd=self.workspace_dir, check=True, capture_output=True)
+                res = subprocess.run(["git", "commit", "-m", "Omni-Agent Auto-Snapshot"], cwd=self.workspace_dir, capture_output=True, text=True)
+                if res.returncode != 0 and "nothing to commit" not in res.stdout:
+                    return {"type": "error", "msg": f"Snapshot failed: {res.stderr}"}
+                return {"type": "snapshot", "msg": "✅ Codebase snapshot securely saved to Git. You can safely proceed with refactors."}
+            except Exception as e:
+                return {"type": "error", "msg": f"Failed to take snapshot: {e}"}
+
+        elif action == "revert_checkpoint":
+            try:
+                subprocess.run(["git", "reset", "--hard", "HEAD^"], cwd=self.workspace_dir, check=True, capture_output=True)
+                return {"type": "revert", "msg": "⏪ Codebase successfully time-traveled to the previous snapshot! All hallucinations erased."}
+            except Exception as e:
+                return {"type": "error", "msg": f"Failed to revert checkpoint: {e}"}
         elif action == "create_file":
+            if not self._ask_the_council(action_data):
+                return {"type": "error", "msg": "❌ THE COUNCIL REJECTED YOUR CODE: The code reviewer detected hallucinations or syntax errors in your proposed new file. Please rewrite it carefully."}
+
             filepath = action_data.get("file")
             content = action_data.get("content", "")
             full_path = os.path.join(self.workspace_dir, filepath)
@@ -78,8 +128,10 @@ Available Tools (Choose ONE per response):
                     os.remove(full_path)
                 return {"type": "error", "msg": f"create_file failed: {e}"}
             return {"type": "edit", "file": filepath, "diff": "File created.", "msg": f"File {filepath} created successfully."}
-
         elif action == "edit_file":
+            if not self._ask_the_council(action_data):
+                return {"type": "error", "msg": "❌ THE COUNCIL REJECTED YOUR CODE: The code reviewer detected hallucinations or syntax errors in your proposed edit. Please rewrite it carefully."}
+
             filepath = action_data.get("file")
             try:
                 if action_data.get("search"):
@@ -148,6 +200,32 @@ Available Tools (Choose ONE per response):
                     "msg": f"Subagent '{role}' {verb}. Result:\n{sub_msg}"}
             
         return {"type": "error", "msg": f"Unknown action: {action}"}
+
+
+    def _ask_the_council(self, action_data):
+        import requests
+        from config import INGEST_MODEL
+        print(f"🏛️ Calling The Council ({INGEST_MODEL}) for Peer Review...")
+        
+        try:
+            prompt = (
+                "You are the Devil's Advocate Code Reviewer. A junior agent has proposed the following file modification:\n"
+                f"```json\n{json.dumps(action_data, indent=2)}\n```\n\n"
+                "Does this code contain obvious hallucinations, syntax errors, or destructive behavior?\n"
+                "Respond with EXACTLY ONE WORD: 'APPROVE' or 'REJECT'."
+            )
+            res = requests.post(
+                f"{OLLAMA_URL}/api/chat",
+                json={"model": INGEST_MODEL, "messages": [{"role": "user", "content": prompt}], "stream": False, "options": {"temperature": 0.0}},
+                timeout=30
+            ).json()
+            answer = res.get("message", {}).get("content", "").strip().upper()
+            if "REJECT" in answer:
+                return False
+            return True
+        except Exception as e:
+            print(f"Council unavailable: {e}. Bypassing review.")
+            return True
 
     def _rewrite_file_with_editor_model(self, filepath, instruction, model=EDITOR_MODEL):
         """
