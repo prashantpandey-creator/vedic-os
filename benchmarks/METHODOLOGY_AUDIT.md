@@ -170,6 +170,52 @@ is in the tests directory as though it measures something.
 
 ---
 
+---
+
+## Two defects this audit committed itself
+
+Listed here because an audit that only finds other people's mistakes is not being
+run honestly.
+
+### A. The same cache trap (caught before publishing)
+
+Documented in item 5 above: the first version of `harness.py` put its
+cache-defeating nonce in the *user* message while leaving the *system* message
+identical, so llama.cpp still cached the shared prefix and reported 6,030 t/s for
+a model that runs at ~240. Fixed by moving the nonce to the front of the first
+message; T1 went from 198 s to 611 s, which is the proof.
+
+### B. A hardcoded constant in a scoring path (caught after publishing)
+
+Item 8 above criticises `tests/zero_shot_benchmark.py` for a hardcoded value in a
+results table. The T2 scorer then did the same thing: it held a literal 7-tool
+allowlist,
+
+```python
+VALID = {"run_command", "edit_file", "create_file", "create_artifact",
+         "invoke_subagent", "create_pull_request", "done"}
+```
+
+while the prompt shown to the models advertised **13** — a concurrent change had
+added `query_memory`, `commit_memory`, `visual_debug`, `git_snapshot` and
+`revert_checkpoint`. `granite4:3b-h` and `mannix/llama3.1-8b-abliterated` both
+chose `query_memory`, a valid tool, and were scored **0/5**. That wrong number was
+published as "the sharpest result in the set" and used to argue for replacing
+`FAST_MODEL`.
+
+Corrected: all four models score **5/5**. The scorer now parses the valid set out
+of `get_system_prompt_addition()` and asserts on its size, so it tracks the tool
+schema automatically.
+
+What caught it: running the same task through the **live production path**, which
+disagreed with the bench. Two independent paths measuring the same thing is worth
+more than more repeats of one path — n=5 reproduced the wrong answer five times,
+because the fault was in the scorer, not the sampling. **Repeats defend against
+noise; a second path defends against being wrong.** That lesson is not in the
+eight rules above, and should be.
+
+---
+
 ## Fix list, in order of how much a published claim depends on it
 
 1. Retract the "context limits" explanation for Granite — measured 1,433 tokens

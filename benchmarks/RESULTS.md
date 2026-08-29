@@ -62,24 +62,43 @@ Granite's context window. This is not a context-capacity failure.
 ## T2 — JSON tool action (the agent-loop job) · n=5
 
 Given the real tool schema and a failing test, emit one valid action. Scored by
-the tool's **own** `parse_action` plus a valid-action-name check — the same gate
-production uses.
+the tool's **own** `parse_action`, plus a valid-action check against the set
+parsed **out of the prompt the model was shown**.
 
-| Model | prefill t/s | gen t/s | prompt tok | **valid action emitted** |
-|---|---|---|---|---|
-| `granite4:3b-h` | 165 | 16.1 | 793 | **0/5** |
-| `qwen3:4b-instruct` | 408 | 42.2 | 843 | **5/5** |
-| `architect-compiler` | 189 | 14.1 | 833 | **5/5** |
-| `mannix/llama3.1-8b-abliterated` | 179 | 17.7 | 1,560 | **0/5** |
+| Model | prefill t/s | gen t/s | prompt tok | **valid action emitted** | chose |
+|---|---|---|---|---|---|
+| `granite4:3b-h` | 369 | 32.8 | 793 | **5/5** | `query_memory` |
+| `qwen3:4b-instruct` | 398 | 40.2 | 843 | **5/5** | `run_command` |
+| `architect-compiler` | 412 | 41.7 | 833 | **5/5** | `run_command` |
+| `mannix/llama3.1-8b-abliterated` | 281 | 31.4 | 1,560 | **5/5** | `query_memory` |
 
-**This is the sharpest result in the set.** `FAST_MODEL` — the model that drives
-the entire agent loop — is `mannix/llama3.1-8b-abliterated`, and it produced a
-parseable, valid tool action **0 times out of 5**. The 4B transformers did it 5/5.
+All four emit parseable, valid tool actions every time. This task does not
+discriminate on validity.
 
-One caveat, stated because it is a confound: on an earlier run whose only
-difference was where the cache-defeating nonce sat, Llama scored 5/5 here. Its
-JSON compliance is fragile to prompt perturbation in a way the Qwen models' is
-not. Either way it is the least reliable of the four at the job it currently has.
+It does show a **judgment** split that this harness does not score: asked to find
+which file defines a login handler, the two Qwen models reach for `run_command`
+(grep the tree) while Granite and Llama reach for `query_memory` (ask the
+episodic store). Both are legal; only one can answer the question from a cold
+start. Scoring action *appropriateness* would need a rubric this harness does not
+have — noted as unmeasured rather than folded into the pass rate.
+
+> ### ⚠️ Correction — this table previously read 0/5 for Granite and Llama
+>
+> The first published version of this section scored both at **0/5** and called it
+> "the sharpest result in the set." **That was wrong, and the bug was mine.** The
+> scorer held a hardcoded 7-tool allowlist while the prompt advertised 13 — a
+> concurrent change had added `query_memory`, `commit_memory`, `visual_debug`,
+> `git_snapshot` and `revert_checkpoint`. Both models chose `query_memory`, a
+> perfectly valid tool, and my stale constant marked it invalid.
+>
+> This is the same defect class this repo's audit flags in
+> `tests/zero_shot_benchmark.py` (a hardcoded value in a results path), committed
+> by the audit itself. The scorer now derives the valid set from
+> `get_system_prompt_addition()` with an assertion on its size, so it cannot go
+> stale again. Both runs are in `results.json` under `corrections`.
+>
+> Caught by running the same task through the live production path, where Llama
+> scored 5/5 — a result that contradicted the bench and turned out to be right.
 
 ## T3 — Whole-file rewrite (the editor job) · n=5
 
@@ -121,6 +140,42 @@ to it without running it.
 
 ---
 
+## Found while validating the swap: the agent loop had never reached a model
+
+Benchmarks call Ollama directly. Production calls it through
+`core/llm_gateway.py` → litellm. Running T2 through the **production** path
+instead surfaced this:
+
+```
+[GATEWAY ERROR] Failed to route to qwen3:4b-instruct-2507-q4_K_M:
+litellm.BadRequestError: LLM Provider NOT provided.
+```
+
+litellm requires an explicit provider prefix. Every caller in this repo passes a
+bare Ollama tag — `config.py`'s `FAST_MODEL`, the `/ws/agent` `model` field, the
+CLI. Verified against **both** the old and the new default:
+
+| model string | through the gateway |
+|---|---|
+| `mannix/llama3.1-8b-abliterated:latest` (old default) | ❌ gateway failure |
+| `qwen3:4b-instruct-2507-q4_K_M` (new default) | ❌ gateway failure |
+| `ollama/mannix/llama3.1-8b-abliterated:latest` | ✅ works |
+| `ollama/qwen3:4b-instruct-2507-q4_K_M` | ✅ works |
+
+So this predates the swap and is not caused by it. `generate_next_thought`
+returned `{"action": "error", "thought": "API Gateway Failure."}` on **every step
+of every run**, the loop fell into its "Malformed JSON. Retrying…" branch, burned
+all 20 steps without ever reaching a model, and then tripped the repeated-action
+detector. That is the real reason the agent never accomplished anything.
+
+The trap that hides it: a bare Ollama tag can still contain a slash —
+`mannix/llama3.1-8b-abliterated:latest` looks prefixed but `mannix` is not a
+provider. `normalize_model()` now checks membership in a known-provider set
+rather than the presence of a slash, and defaults everything else to `ollama/`.
+After the fix, the full loop emits valid actions 5/5 on both models.
+
+---
+
 ## What this means for the harness
 
 **The non-transformer is on the right job — but for the wrong reason, and it is
@@ -140,10 +195,17 @@ Three things follow:
 
 1. **Keep the current assignment.** Granite edits, Qwen ingests. It is correct
    on accuracy, which is the constraint that binds.
-2. **`FAST_MODEL` is the real problem.** The 8B abliterated Llama drives the
-   agent loop and emitted a valid tool action 0/5 in T2, while a 4B transformer
-   at half the size did it 5/5 and generates ~2× faster. This is the one
-   substitution the data actually supports.
+2. **`FAST_MODEL` — a weaker case than this document first made.** The original
+   version claimed the 8B abliterated Llama emitted a valid tool action 0/5.
+   That was a scorer bug (see the T2 correction); it is 5/5, and so is everything
+   else. What survives is narrower: on **T1** Llama states the wrong count 5/5
+   while `qwen3:4b` gets it right 5/5, and qwen3 is 4B vs 8B (2.5 GB vs 4.68 GB
+   on disk). Live end-to-end it ran 4.3 s/step vs 4.9 s/step — a 12 % gap, well
+   under this box's noise floor, so **do not** claim a speed win.
+   Against that: Llama is the *abliterated* model. Swapping `FAST_MODEL` to
+   `qwen3:4b` trades refusal-free behaviour for counting accuracy and half the
+   footprint. That is a judgement call, not a measurement — the env var
+   `FAST_MODEL` overrides it either way.
 3. **`architect-compiler` is not faster than its base model** and cannot be —
    same weights. Its 5/5 vs 5/5 on both scored tasks confirms it. It is still
    worth keeping for what it genuinely does: baking sampling params and a system

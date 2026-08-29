@@ -376,15 +376,15 @@
           "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
           "prompt_tokens": 793,
           "gen_tokens": 58,
-          "prefill_tps": 144.7502898630487,
-          "gen_tps": 17.194772649066227,
-          "load_s": 86.608628416,
-          "wall_s": 95.48352600000362,
+          "prefill_tps": 368.69955420908855,
+          "gen_tps": 32.76119160079302,
+          "load_s": 0.517241833,
+          "wall_s": 4.463068917000783,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         },
@@ -392,15 +392,15 @@
           "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
           "prompt_tokens": 793,
           "gen_tokens": 58,
-          "prefill_tps": 215.51471548677398,
-          "gen_tps": 16.13308890442666,
-          "load_s": 0.049575208,
-          "wall_s": 7.3471279999939725,
+          "prefill_tps": 368.803638222126,
+          "gen_tps": 33.03015034265193,
+          "load_s": 0.043941458,
+          "wall_s": 3.9727958330040565,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         },
@@ -408,15 +408,15 @@
           "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
           "prompt_tokens": 793,
           "gen_tokens": 58,
-          "prefill_tps": 165.15620735050513,
-          "gen_tps": 15.86889320925769,
-          "load_s": 0.042220791,
-          "wall_s": 8.521374584001023,
+          "prefill_tps": 372.2573744881815,
+          "gen_tps": 33.11046336020644,
+          "load_s": 0.041221875,
+          "wall_s": 3.9465663750015665,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         },
@@ -424,15 +424,15 @@
           "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
           "prompt_tokens": 793,
           "gen_tokens": 58,
-          "prefill_tps": 162.55161903274828,
-          "gen_tps": 15.974692389939326,
-          "load_s": 0.040955,
-          "wall_s": 8.57566004099499,
+          "prefill_tps": 366.65136331072506,
+          "gen_tps": 31.89877812846836,
+          "load_s": 0.042172333,
+          "wall_s": 4.0490705000047456,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         },
@@ -440,15 +440,15 @@
           "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
           "prompt_tokens": 793,
           "gen_tokens": 58,
-          "prefill_tps": 170.68426232087265,
-          "gen_tps": 16.256809387442335,
-          "load_s": 0.040216291,
-          "wall_s": 8.276378667003883,
+          "prefill_tps": 369.3856898399077,
+          "gen_tps": 32.72396156296736,
+          "load_s": 0.042750667,
+          "wall_s": 3.984863582998514,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         }
@@ -458,42 +458,10 @@
           "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
           "prompt_tokens": 843,
           "gen_tokens": 96,
-          "prefill_tps": 410.39486035848006,
-          "gen_tps": 42.17967128000787,
-          "load_s": 0.682089125,
-          "wall_s": 5.071236041003431,
-          "retries": 0,
-          "truncated": false,
-          "score": {
-            "json_parsed": true,
-            "valid_action": true,
-            "action": "run_command"
-          }
-        },
-        {
-          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' --files\"}\n```",
-          "prompt_tokens": 843,
-          "gen_tokens": 83,
-          "prefill_tps": 409.60212487627734,
-          "gen_tps": 42.343668461654566,
-          "load_s": 0.060320875,
-          "wall_s": 8.135747209002147,
-          "retries": 0,
-          "truncated": false,
-          "score": {
-            "json_parsed": true,
-            "valid_action": true,
-            "action": "run_command"
-          }
-        },
-        {
-          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' --files\"}\n```",
-          "prompt_tokens": 843,
-          "gen_tokens": 83,
-          "prefill_tps": 407.9070251972255,
-          "gen_tps": 42.32622378171613,
-          "load_s": 0.059139625,
-          "wall_s": 8.208360874996288,
+          "prefill_tps": 380.9948858893764,
+          "gen_tps": 39.97436716991569,
+          "load_s": 1.863619958,
+          "wall_s": 6.573210750000726,
           "retries": 0,
           "truncated": false,
           "score": {
@@ -506,10 +474,10 @@
           "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
           "prompt_tokens": 843,
           "gen_tokens": 96,
-          "prefill_tps": 405.32922187372674,
-          "gen_tps": 42.13849205722389,
-          "load_s": 0.060665625,
-          "wall_s": 8.488257833996613,
+          "prefill_tps": 411.09526456716765,
+          "gen_tps": 40.361350309138444,
+          "load_s": 0.062480708,
+          "wall_s": 4.5297359579999465,
           "retries": 0,
           "truncated": false,
           "score": {
@@ -522,10 +490,42 @@
           "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
           "prompt_tokens": 843,
           "gen_tokens": 96,
-          "prefill_tps": 321.8379914036439,
-          "gen_tps": 11.307321385827922,
-          "load_s": 8.751624625,
-          "wall_s": 19.93379583299975,
+          "prefill_tps": 397.9653567465268,
+          "gen_tps": 40.17851399145747,
+          "load_s": 0.060705375,
+          "wall_s": 4.609162208005728,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
+          "prompt_tokens": 843,
+          "gen_tokens": 96,
+          "prefill_tps": 408.1899297225935,
+          "gen_tps": 40.29595424035762,
+          "load_s": 0.062099083,
+          "wall_s": 4.548913750004431,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
+          "prompt_tokens": 843,
+          "gen_tokens": 96,
+          "prefill_tps": 390.74025921487237,
+          "gen_tps": 37.82151296971264,
+          "load_s": 0.059082625,
+          "wall_s": 4.793098750000354,
           "retries": 0,
           "truncated": false,
           "score": {
@@ -537,29 +537,13 @@
       ],
       "architect-compiler:latest": [
         {
-          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -i 'handler\\\\|auth'\"}\n```",
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
           "prompt_tokens": 833,
-          "gen_tokens": 91,
-          "prefill_tps": 186.12627312999044,
-          "gen_tps": 13.937559555220698,
-          "load_s": 1.717257834,
-          "wall_s": 12.781527749997622,
-          "retries": 0,
-          "truncated": false,
-          "score": {
-            "json_parsed": true,
-            "valid_action": true,
-            "action": "run_command"
-          }
-        },
-        {
-          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -i 'handler\\\\|auth'\"}\n```",
-          "prompt_tokens": 833,
-          "gen_tokens": 91,
-          "prefill_tps": 188.81701211811944,
-          "gen_tps": 13.520594229034717,
-          "load_s": 0.060881417,
-          "wall_s": 11.239273375002085,
+          "gen_tokens": 88,
+          "prefill_tps": 404.39569537783393,
+          "gen_tps": 41.73568682161332,
+          "load_s": 1.77515975,
+          "wall_s": 6.027400833001593,
           "retries": 0,
           "truncated": false,
           "score": {
@@ -572,10 +556,10 @@
           "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
           "prompt_tokens": 833,
           "gen_tokens": 88,
-          "prefill_tps": 188.0308718719482,
-          "gen_tps": 14.057612125831426,
-          "load_s": 0.0807765,
-          "wall_s": 10.805865124995762,
+          "prefill_tps": 412.9741387196036,
+          "gen_tps": 40.9046947678731,
+          "load_s": 0.064563166,
+          "wall_s": 4.2688555419954355,
           "retries": 0,
           "truncated": false,
           "score": {
@@ -588,10 +572,10 @@
           "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
           "prompt_tokens": 833,
           "gen_tokens": 88,
-          "prefill_tps": 191.36710742358758,
-          "gen_tps": 19.10849740509146,
-          "load_s": 0.059817792,
-          "wall_s": 9.053225666000799,
+          "prefill_tps": 414.96087546367215,
+          "gen_tps": 41.80886600380309,
+          "load_s": 0.062244459,
+          "wall_s": 4.209337667001819,
           "retries": 0,
           "truncated": false,
           "score": {
@@ -604,10 +588,26 @@
           "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
           "prompt_tokens": 833,
           "gen_tokens": 88,
-          "prefill_tps": 286.8447586668882,
-          "gen_tps": 26.458448689601447,
-          "load_s": 1.963427084,
-          "wall_s": 8.251597667003807,
+          "prefill_tps": 403.94911576258687,
+          "gen_tps": 40.97923764618911,
+          "load_s": 0.058821958,
+          "wall_s": 4.3064138750050915,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
+          "prompt_tokens": 833,
+          "gen_tokens": 88,
+          "prefill_tps": 411.9598675422916,
+          "gen_tps": 41.73607357917625,
+          "load_s": 0.059205042,
+          "wall_s": 4.22724316699896,
           "retries": 0,
           "truncated": false,
           "score": {
@@ -622,15 +622,15 @@
           "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
           "prompt_tokens": 1560,
           "gen_tokens": 42,
-          "prefill_tps": 144.20596383175769,
-          "gen_tps": 18.154707293724805,
-          "load_s": 1.185617792,
-          "wall_s": 14.338276041999052,
+          "prefill_tps": 279.02945207862757,
+          "gen_tps": 32.69775143075317,
+          "load_s": 1.22227625,
+          "wall_s": 8.12044241699914,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         },
@@ -638,15 +638,15 @@
           "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
           "prompt_tokens": 1560,
           "gen_tokens": 42,
-          "prefill_tps": 146.89071031015658,
-          "gen_tps": 18.649228254061956,
-          "load_s": 0.075937667,
-          "wall_s": 12.968504040996777,
+          "prefill_tps": 284.89007425813,
+          "gen_tps": 32.05275585676026,
+          "load_s": 0.081404625,
+          "wall_s": 6.8893255420043715,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         },
@@ -654,15 +654,15 @@
           "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
           "prompt_tokens": 1560,
           "gen_tokens": 42,
-          "prefill_tps": 179.47775856570257,
-          "gen_tps": 16.86571358299687,
-          "load_s": 0.076095459,
-          "wall_s": 11.279519874995458,
+          "prefill_tps": 277.54232675132744,
+          "gen_tps": 31.39622764995621,
+          "load_s": 0.081575792,
+          "wall_s": 7.068211375000828,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         },
@@ -670,15 +670,15 @@
           "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
           "prompt_tokens": 1560,
           "gen_tokens": 42,
-          "prefill_tps": 232.01533502382284,
-          "gen_tps": 17.65637355467785,
-          "load_s": 1.180188042,
-          "wall_s": 10.30639629199868,
+          "prefill_tps": 285.14806526875947,
+          "gen_tps": 30.76893193865882,
+          "load_s": 0.074933833,
+          "wall_s": 6.93263683400437,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         },
@@ -686,15 +686,15 @@
           "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
           "prompt_tokens": 1560,
           "gen_tokens": 42,
-          "prefill_tps": 219.17181574084955,
-          "gen_tps": 17.74935565380508,
-          "load_s": 0.080131833,
-          "wall_s": 9.589114041998982,
+          "prefill_tps": 281.19256592835,
+          "gen_tps": 30.36902985193421,
+          "load_s": 0.098017417,
+          "wall_s": 7.060934583001654,
           "retries": 0,
           "truncated": false,
           "score": {
             "json_parsed": true,
-            "valid_action": false,
+            "valid_action": true,
             "action": "query_memory"
           }
         }
@@ -1340,5 +1340,13 @@
         ]
       }
     }
-  }
+  },
+  "corrections": [
+    {
+      "date": "2026-08-29",
+      "task": "t2",
+      "what": "First T2 run scored granite4:3b-h and llama-8b 0/5. The scorer held a hardcoded 7-tool allowlist while the prompt advertised 13; both models chose query_memory, a valid tool, and were marked invalid.",
+      "after": "All four models 5/5. Scorer now derives the valid set from the prompt itself."
+    }
+  ]
 }

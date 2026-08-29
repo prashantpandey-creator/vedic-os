@@ -236,11 +236,17 @@ def task_t2_json_action(reps):
     """
     from agents.omni_state_machine import parse_action
     from core.tool_registry import ToolRegistry
-    VALID = {"run_command", "edit_file", "create_file", "create_artifact",
-             "invoke_subagent", "create_pull_request", "done"}
+    prompt_add = ToolRegistry(ROOT, None).get_system_prompt_addition()
+    # Derive the valid-action set FROM THE PROMPT the model is actually shown.
+    # A hardcoded list here scored query_memory as invalid after another session
+    # added 6 tools, which turned two 5/5 models into 0/5 and put a wrong
+    # headline in RESULTS.md. Never hand-maintain a scoring constant that
+    # mirrors something the code already knows.
+    VALID = set(re.findall(r'"action":\s*"([a-z_]+)"', prompt_add))
+    assert len(VALID) >= 7, f"tool schema parse looks wrong: {VALID}"
     system = ("You are the Vedic Omni-Agent.\n"
               "Output your chosen action strictly inside a ```json block.\n"
-              + ToolRegistry(ROOT, None).get_system_prompt_addition())
+              + prompt_add)
     user = ("Tool Execution Result:\n```\ntest_auth.py::test_login FAILED - "
             "AssertionError: expected 200, got 401\n```\n"
             "Find which file defines the login handler. Choose ONE action.")
