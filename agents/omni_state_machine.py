@@ -74,6 +74,12 @@ def init_omni_loop(intent_prompt, meditate_model, coder_model, workspace_dir="."
     registry = ToolRegistry(workspace_dir, None)
     system = f"""You are the Vedic Omni-Agent. You have native Zsh terminal access to this Mac.
 
+TEST-DRIVEN DEVELOPMENT ENFORCEMENT:
+If the user asks you to build a feature or fix a bug, you MUST create a unit test file (using pytest or jest) FIRST. 
+You must then run the test (it should fail), write the code, and repeatedly run the test until it passes. 
+Do not output "action": "done" until the tests pass green in the terminal.
+
+
 =========================================
 1. HISTORICAL PROJECT MEMORY (Context)
 =========================================
