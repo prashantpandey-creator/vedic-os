@@ -1,0 +1,1352 @@
+{
+  "models": {
+    "granite4:3b-h": {
+      "architecture": "granitehybrid",
+      "is_ssm": true,
+      "context_length": 1048576,
+      "params": "3.2B",
+      "quant": "Q4_K_M",
+      "parent": null
+    },
+    "qwen3:4b-instruct-2507-q4_K_M": {
+      "architecture": "qwen3",
+      "is_ssm": false,
+      "context_length": 262144,
+      "params": "4.0B",
+      "quant": "Q4_K_M",
+      "parent": null
+    },
+    "architect-compiler:latest": {
+      "architecture": "qwen3",
+      "is_ssm": false,
+      "context_length": 262144,
+      "params": "4.0B",
+      "quant": "Q4_K_M",
+      "parent": "qwen3:4b-instruct-2507-q4_K_M"
+    },
+    "mannix/llama3.1-8b-abliterated:latest": {
+      "architecture": "llama",
+      "is_ssm": false,
+      "context_length": 131072,
+      "params": "8.0B",
+      "quant": "Q4_0",
+      "parent": null
+    }
+  },
+  "reps": {
+    "t1": 5,
+    "t2": 5,
+    "t3": 5,
+    "t4": 3
+  },
+  "results": {
+    "t1": {
+      "granite4:3b-h": [
+        {
+          "text": "- The codebase consists of a single file named `main.py`.\n- Within `main.py`, there are classes numbered from `Module0` to `Module127`, totaling **128** distinct classes.\n- Each class has an `execute` method that returns its respective numeric identifier (e.g., `Module0.execute()` returns 0, `Module1.execute()` returns 1, etc.).\n- The primary functionality of the codebase appears to be a collectio",
+          "prompt_tokens": 2011,
+          "gen_tokens": 106,
+          "prefill_tps": 157.0957728134185,
+          "gen_tps": 15.99261241245285,
+          "load_s": 0.733662042,
+          "wall_s": 35.115381791998516,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 128,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- The codebase consists of a single file named `main.py`.\n- Within `main.py`, there are classes numbered from `Module0` to `Module127`, totaling **128** distinct classes.\n- Each class has an `execute` method that returns its respective numeric identifier (e.g., `Module0.execute()` returns 0, `Module1.execute()` returns 1, etc.).\n- The primary functionality of the codebase appears to be a collectio",
+          "prompt_tokens": 2011,
+          "gen_tokens": 106,
+          "prefill_tps": 368.11170004270616,
+          "gen_tps": 32.33544336987828,
+          "load_s": 0.064964458,
+          "wall_s": 21.966192499996396,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 128,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- The codebase consists of a single file named `main.py`.\n- Within `main.py`, there are classes labeled `Module0` to `Module105`, totaling **106** distinct classes.\n- Each class has an `execute` method that returns its respective module number (e.g., `Module3.execute()` returns 3).\n- The primary functionality of the codebase appears to be defining a series of numbered modules, each capable of exec",
+          "prompt_tokens": 2011,
+          "gen_tokens": 120,
+          "prefill_tps": 369.5552281304402,
+          "gen_tps": 32.09288537694174,
+          "load_s": 0.05286825,
+          "wall_s": 18.443110291002085,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 106,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- The codebase consists of a single file named `main.py`.\n- Within `main.py`, there are classes numbered from `Module0` to `Module127`, totaling **128** distinct classes.\n- Each class has an `execute` method that returns its respective numeric identifier (e.g., `Module0.execute()` returns 0, `Module1.execute()` returns 1, etc.).\n- The primary functionality of the codebase appears to be a collectio",
+          "prompt_tokens": 2011,
+          "gen_tokens": 106,
+          "prefill_tps": 171.32888679318722,
+          "gen_tps": 17.54343802589393,
+          "load_s": 17.734081959,
+          "wall_s": 35.569859165996604,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 128,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- The codebase consists of a single file named `main.py`.\n- Within `main.py`, there are classes labeled `Module0` to `Module105`, totaling **106** distinct classes.\n- Each class has an `execute` method that returns its respective module number (e.g., `Module3.execute()` returns 3).\n- The primary functionality of the codebase appears to be defining a series of numbered modules, each capable of exec",
+          "prompt_tokens": 2011,
+          "gen_tokens": 120,
+          "prefill_tps": 265.624895740825,
+          "gen_tps": 16.21277411062669,
+          "load_s": 0.063074208,
+          "wall_s": 15.100809417002893,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 106,
+            "ground_truth": 137
+          }
+        }
+      ],
+      "qwen3:4b-instruct-2507-q4_K_M": [
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- All classes have identical `execute` method returning an integer index  \n- Linear progression of return values from 0 to 136  \n- No inheritance, no composition, no dependencies  \n- Architecture is a simple, monolithic sequence of independent modules",
+          "prompt_tokens": 2360,
+          "gen_tokens": 68,
+          "prefill_tps": 195.8986378943586,
+          "gen_tps": 20.424857055121052,
+          "load_s": 1.571126125,
+          "wall_s": 16.999724958994193,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- All classes have identical `execute` method returning an integer index  \n- Linear progression of return values from 0 to 136  \n- No inheritance, no composition, no dependencies  \n- Architecture is a simple, monolithic sequence of independent modules",
+          "prompt_tokens": 2360,
+          "gen_tokens": 68,
+          "prefill_tps": 203.81132428879687,
+          "gen_tps": 20.796527868958616,
+          "load_s": 0.065374958,
+          "wall_s": 29.871118333001505,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- All classes have identical `execute` method returning an integer index  \n- Linear progression of return values from 0 to 136  \n- No inheritance, no composition, no dependencies  \n- Architecture is a simple, monolithic sequence of independent modules",
+          "prompt_tokens": 2360,
+          "gen_tokens": 68,
+          "prefill_tps": 199.9191457003087,
+          "gen_tps": 20.661348502610196,
+          "load_s": 0.061483125,
+          "wall_s": 30.152665249996062,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- All classes have identical `execute` method returning an integer index  \n- Linear progression of return values from 0 to 136  \n- No inheritance, no composition, no dependencies  \n- Architecture is a simple, monolithic sequence of independent modules",
+          "prompt_tokens": 2360,
+          "gen_tokens": 68,
+          "prefill_tps": 207.24030975900345,
+          "gen_tps": 33.35059517634,
+          "load_s": 0.060074042,
+          "wall_s": 28.248888667003484,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- All classes have identical `execute` method returning an integer index  \n- Linear progression of return values from 0 to 136  \n- No inheritance, no composition, no dependencies  \n- Architecture is a simple, monolithic sequence of independent modules",
+          "prompt_tokens": 2360,
+          "gen_tokens": 68,
+          "prefill_tps": 398.73364613422433,
+          "gen_tps": 39.379492084897855,
+          "load_s": 1.78508575,
+          "wall_s": 9.47933529200236,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        }
+      ],
+      "architect-compiler:latest": [
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- Each class has an execute method returning an integer index  \n- All modules are independent, no dependencies or interactions  \n- Linear progression of values from 0 to 136  \n- Architecture is a simple, monolithic pipeline of sequential modules",
+          "prompt_tokens": 2350,
+          "gen_tokens": 66,
+          "prefill_tps": 205.58019219101672,
+          "gen_tps": 20.59463230721203,
+          "load_s": 2.344320541,
+          "wall_s": 32.096316333001596,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- All classes have identical `execute` method returning a sequential integer  \n- No inheritance, no composition, no external dependencies  \n- Each class is a standalone module with no interaction  \n- Architecture is linear, monolithic, and stateless",
+          "prompt_tokens": 2350,
+          "gen_tokens": 64,
+          "prefill_tps": 398.244799595485,
+          "gen_tps": 39.43313522458914,
+          "load_s": 0.061869708,
+          "wall_s": 16.84433975000138,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- All classes have identical `execute` method returning a sequential integer  \n- No inheritance, no composition, no external dependencies  \n- Each class is a standalone module with no interaction  \n- Architecture is linear, monolithic, and stateless",
+          "prompt_tokens": 2350,
+          "gen_tokens": 64,
+          "prefill_tps": 401.5083615311417,
+          "gen_tps": 38.278556448912,
+          "load_s": 0.058526917,
+          "wall_s": 15.082345417002216,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- All classes have identical `execute` method returning a sequential integer  \n- No inheritance, no composition, no external dependencies  \n- Each class is a standalone module with no interaction  \n- Architecture is linear, monolithic, and stateless",
+          "prompt_tokens": 2350,
+          "gen_tokens": 64,
+          "prefill_tps": 397.7316854237705,
+          "gen_tps": 39.1357899837317,
+          "load_s": 0.0639565,
+          "wall_s": 15.092382707996876,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "- 137 classes (Module0 to Module136)  \n- All classes have identical `execute` method returning a sequential integer  \n- No inheritance, no composition, no external dependencies  \n- Each class is a standalone module with no interaction  \n- Architecture is linear, monolithic, and stateless",
+          "prompt_tokens": 2350,
+          "gen_tokens": 64,
+          "prefill_tps": 124.26925957208924,
+          "gen_tps": 7.290270624694289,
+          "load_s": 49.690139625,
+          "wall_s": 77.45482554200134,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": true,
+            "closest_count_stated": 137,
+            "ground_truth": 137
+          }
+        }
+      ],
+      "mannix/llama3.1-8b-abliterated:latest": [
+        {
+          "text": "**Summary:**\n\n* **Number of classes:** 136\n\n**Key points:**\n\n\u2022 The codebase consists entirely of 136 identical classes, each with a single method `execute` that returns an integer value.\n\u2022 No other functionality or logic is present in the code.\n\u2022 This suggests a highly specialized and specific purpose for this architecture.",
+          "prompt_tokens": 2097,
+          "gen_tokens": 70,
+          "prefill_tps": 241.43529543131947,
+          "gen_tps": 18.937312838360864,
+          "load_s": 1.4295185,
+          "wall_s": 26.528243875000044,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 136,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "**Summary:**\n\n* **Number of classes:** 136\n\n**Key points:**\n\n\u2022 The codebase consists entirely of 136 identical classes, each with a single method `execute` that returns an integer value.\n\u2022 No other functionality or logic is present in the code.\n\u2022 This suggests a highly specialized and specific purpose for this architecture.",
+          "prompt_tokens": 2097,
+          "gen_tokens": 70,
+          "prefill_tps": 240.86275846450235,
+          "gen_tps": 19.50208101928547,
+          "load_s": 0.079982542,
+          "wall_s": 24.881844208000985,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 136,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "**Summary:**\n\n* **Number of classes:** 136\n\n**Key points:**\n\n\u2022 The codebase consists entirely of 136 identical classes, each with a single method `execute` that returns an integer value.\n\u2022 No other functionality or logic is present in the code.\n\u2022 This suggests a highly specialized and specific purpose for this architecture.",
+          "prompt_tokens": 2097,
+          "gen_tokens": 70,
+          "prefill_tps": 242.0062828821774,
+          "gen_tps": 20.611125513020557,
+          "load_s": 0.085482125,
+          "wall_s": 24.586803833000886,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 136,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "**Summary:**\n\n* **Number of classes:** 136\n\n**Key points:**\n\n\u2022 The codebase consists entirely of 136 identical classes, each with a single method `execute` that returns an integer value.\n\u2022 No other functionality or logic is present in the code.\n\u2022 This suggests a highly specialized and specific purpose for this architecture.",
+          "prompt_tokens": 2097,
+          "gen_tokens": 70,
+          "prefill_tps": 204.12170094059726,
+          "gen_tps": 16.33585031486494,
+          "load_s": 93.442420166,
+          "wall_s": 108.0356766670011,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 136,
+            "ground_truth": 137
+          }
+        },
+        {
+          "text": "**Summary:**\n\n* **Number of classes:** 136\n\n**Key points:**\n\n\u2022 The codebase consists entirely of 136 identical classes, each with a single method `execute` that returns an integer value.\n\u2022 No other functionality or logic is present in the code.\n\u2022 This suggests a highly specialized and specific purpose for this architecture.",
+          "prompt_tokens": 2097,
+          "gen_tokens": 70,
+          "prefill_tps": 218.11062467267848,
+          "gen_tps": 18.482323567260007,
+          "load_s": 41.865410125,
+          "wall_s": 55.31764408299932,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "states_exact_count": false,
+            "closest_count_stated": 136,
+            "ground_truth": 137
+          }
+        }
+      ]
+    },
+    "t2": {
+      "granite4:3b-h": [
+        {
+          "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
+          "prompt_tokens": 793,
+          "gen_tokens": 58,
+          "prefill_tps": 368.69955420908855,
+          "gen_tps": 32.76119160079302,
+          "load_s": 0.517241833,
+          "wall_s": 4.463068917000783,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        },
+        {
+          "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
+          "prompt_tokens": 793,
+          "gen_tokens": 58,
+          "prefill_tps": 368.803638222126,
+          "gen_tps": 33.03015034265193,
+          "load_s": 0.043941458,
+          "wall_s": 3.9727958330040565,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        },
+        {
+          "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
+          "prompt_tokens": 793,
+          "gen_tokens": 58,
+          "prefill_tps": 372.2573744881815,
+          "gen_tps": 33.11046336020644,
+          "load_s": 0.041221875,
+          "wall_s": 3.9465663750015665,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        },
+        {
+          "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
+          "prompt_tokens": 793,
+          "gen_tokens": 58,
+          "prefill_tps": 366.65136331072506,
+          "gen_tps": 31.89877812846836,
+          "load_s": 0.042172333,
+          "wall_s": 4.0490705000047456,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        },
+        {
+          "text": "```json\n{\n  \"thought\": \"Locate the file that implements the login view/controller in a Next.js app.\",\n  \"action\": \"query_memory\",\n  \"query\": \"Which file contains the login handler (GET /login) in this Next.js project?\"\n}\n```",
+          "prompt_tokens": 793,
+          "gen_tokens": 58,
+          "prefill_tps": 369.3856898399077,
+          "gen_tps": 32.72396156296736,
+          "load_s": 0.042750667,
+          "wall_s": 3.984863582998514,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        }
+      ],
+      "qwen3:4b-instruct-2507-q4_K_M": [
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
+          "prompt_tokens": 843,
+          "gen_tokens": 96,
+          "prefill_tps": 380.9948858893764,
+          "gen_tps": 39.97436716991569,
+          "load_s": 1.863619958,
+          "wall_s": 6.573210750000726,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
+          "prompt_tokens": 843,
+          "gen_tokens": 96,
+          "prefill_tps": 411.09526456716765,
+          "gen_tps": 40.361350309138444,
+          "load_s": 0.062480708,
+          "wall_s": 4.5297359579999465,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
+          "prompt_tokens": 843,
+          "gen_tokens": 96,
+          "prefill_tps": 397.9653567465268,
+          "gen_tps": 40.17851399145747,
+          "load_s": 0.060705375,
+          "wall_s": 4.609162208005728,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
+          "prompt_tokens": 843,
+          "gen_tokens": 96,
+          "prefill_tps": 408.1899297225935,
+          "gen_tps": 40.29595424035762,
+          "load_s": 0.062099083,
+          "wall_s": 4.548913750004431,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To locate it, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | grep -E '\\\\.js|\\\\.ts|\\\\.py|\\\\.jsx'\"}\n```",
+          "prompt_tokens": 843,
+          "gen_tokens": 96,
+          "prefill_tps": 390.74025921487237,
+          "gen_tps": 37.82151296971264,
+          "load_s": 0.059082625,
+          "wall_s": 4.793098750000354,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        }
+      ],
+      "architect-compiler:latest": [
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
+          "prompt_tokens": 833,
+          "gen_tokens": 88,
+          "prefill_tps": 404.39569537783393,
+          "gen_tps": 41.73568682161332,
+          "load_s": 1.77515975,
+          "wall_s": 6.027400833001593,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
+          "prompt_tokens": 833,
+          "gen_tokens": 88,
+          "prefill_tps": 412.9741387196036,
+          "gen_tps": 40.9046947678731,
+          "load_s": 0.064563166,
+          "wall_s": 4.2688555419954355,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
+          "prompt_tokens": 833,
+          "gen_tokens": 88,
+          "prefill_tps": 414.96087546367215,
+          "gen_tps": 41.80886600380309,
+          "load_s": 0.062244459,
+          "wall_s": 4.209337667001819,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
+          "prompt_tokens": 833,
+          "gen_tokens": 88,
+          "prefill_tps": 403.94911576258687,
+          "gen_tps": 40.97923764618911,
+          "load_s": 0.058821958,
+          "wall_s": 4.3064138750050915,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"The test failed with a 401 error on login, indicating the login handler is likely in a file that manages authentication. To find the specific file, I should search the codebase for files containing 'login' or 'auth' in their names or code.\", \"action\": \"run_command\", \"command\": \"rg -l 'login' | rg -l 'auth'\"}\n```",
+          "prompt_tokens": 833,
+          "gen_tokens": 88,
+          "prefill_tps": 411.9598675422916,
+          "gen_tps": 41.73607357917625,
+          "load_s": 0.059205042,
+          "wall_s": 4.22724316699896,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "run_command"
+          }
+        }
+      ],
+      "mannix/llama3.1-8b-abliterated:latest": [
+        {
+          "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
+          "prompt_tokens": 1560,
+          "gen_tokens": 42,
+          "prefill_tps": 279.02945207862757,
+          "gen_tps": 32.69775143075317,
+          "load_s": 1.22227625,
+          "wall_s": 8.12044241699914,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
+          "prompt_tokens": 1560,
+          "gen_tokens": 42,
+          "prefill_tps": 284.89007425813,
+          "gen_tps": 32.05275585676026,
+          "load_s": 0.081404625,
+          "wall_s": 6.8893255420043715,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
+          "prompt_tokens": 1560,
+          "gen_tokens": 42,
+          "prefill_tps": 277.54232675132744,
+          "gen_tps": 31.39622764995621,
+          "load_s": 0.081575792,
+          "wall_s": 7.068211375000828,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
+          "prompt_tokens": 1560,
+          "gen_tokens": 42,
+          "prefill_tps": 285.14806526875947,
+          "gen_tps": 30.76893193865882,
+          "load_s": 0.074933833,
+          "wall_s": 6.93263683400437,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        },
+        {
+          "text": "```json\n{\"thought\": \"Error in test_auth.py, need to find the login handler definition.\", \"action\": \"query_memory\", \"query\": \"Where is the login handler defined?\"}\n```",
+          "prompt_tokens": 1560,
+          "gen_tokens": 42,
+          "prefill_tps": 281.19256592835,
+          "gen_tps": 30.36902985193421,
+          "load_s": 0.098017417,
+          "wall_s": 7.060934583001654,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "json_parsed": true,
+            "valid_action": true,
+            "action": "query_memory"
+          }
+        }
+      ]
+    },
+    "t3": {
+      "granite4:3b-h": [
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 195,
+          "gen_tokens": 115,
+          "prefill_tps": 186.99873711889285,
+          "gen_tps": 16.555684095534446,
+          "load_s": 1.226778375,
+          "wall_s": 9.253558459000487,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 195,
+          "gen_tokens": 115,
+          "prefill_tps": 224.0342078314473,
+          "gen_tps": 15.026007821822605,
+          "load_s": 0.040585458,
+          "wall_s": 8.606445999997959,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 195,
+          "gen_tokens": 115,
+          "prefill_tps": 171.3200686682112,
+          "gen_tps": 16.68411265569981,
+          "load_s": 0.472246833,
+          "wall_s": 8.542155125003774,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 195,
+          "gen_tokens": 115,
+          "prefill_tps": 221.5489701226251,
+          "gen_tps": 16.712682040493036,
+          "load_s": 0.046261542,
+          "wall_s": 7.845001292000234,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 195,
+          "gen_tokens": 115,
+          "prefill_tps": 166.22491557125397,
+          "gen_tps": 21.083181589593547,
+          "load_s": 0.041420375,
+          "wall_s": 6.705912792000163,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        }
+      ],
+      "qwen3:4b-instruct-2507-q4_K_M": [
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 217,
+          "gen_tokens": 115,
+          "prefill_tps": 373.3131285028653,
+          "gen_tps": 23.81619243216081,
+          "load_s": 0.874443167,
+          "wall_s": 6.354748458994436,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 217,
+          "gen_tokens": 115,
+          "prefill_tps": 310.55285817659336,
+          "gen_tps": 22.055953360278494,
+          "load_s": 0.065137583,
+          "wall_s": 6.025436790994718,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 217,
+          "gen_tokens": 115,
+          "prefill_tps": 319.4376916821198,
+          "gen_tps": 25.31951696933248,
+          "load_s": 0.06089225,
+          "wall_s": 5.326673374998791,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 217,
+          "gen_tokens": 115,
+          "prefill_tps": 318.4936374628784,
+          "gen_tps": 22.15991752229771,
+          "load_s": 0.059553625,
+          "wall_s": 5.974295875006646,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 217,
+          "gen_tokens": 115,
+          "prefill_tps": 323.012941827596,
+          "gen_tps": 22.61160721983404,
+          "load_s": 0.059040084,
+          "wall_s": 5.860305124995648,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        }
+      ],
+      "architect-compiler:latest": [
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 207,
+          "gen_tokens": 115,
+          "prefill_tps": 183.65096114551176,
+          "gen_tps": 29.519800433478657,
+          "load_s": 1.819116833,
+          "wall_s": 6.921039499997278,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 207,
+          "gen_tokens": 115,
+          "prefill_tps": 230.8195589540679,
+          "gen_tps": 23.811062945787008,
+          "load_s": 2.34647025,
+          "wall_s": 8.183032000000821,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 207,
+          "gen_tokens": 115,
+          "prefill_tps": 291.33455594577276,
+          "gen_tps": 34.12849971783565,
+          "load_s": 0.090533334,
+          "wall_s": 4.225847583002178,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 207,
+          "gen_tokens": 115,
+          "prefill_tps": 423.2775021106365,
+          "gen_tps": 42.19663004356321,
+          "load_s": 0.0605575,
+          "wall_s": 3.320377208001446,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):\n    out = dict(a)\n    out.update(b)\n    return out\n\ndef describ",
+          "prompt_tokens": 207,
+          "gen_tokens": 115,
+          "prefill_tps": 414.92327316004446,
+          "gen_tps": 42.55317900289697,
+          "load_s": 0.060735583,
+          "wall_s": 3.3074423750003916,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.23
+          }
+        }
+      ],
+      "mannix/llama3.1-8b-abliterated:latest": [
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        if default is None:\n            raise\n        else:\n            return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):",
+          "prompt_tokens": 250,
+          "gen_tokens": 127,
+          "prefill_tps": 275.07885927728296,
+          "gen_tps": 32.40328943385774,
+          "load_s": 1.174869625,
+          "wall_s": 6.052530207998643,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.41
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        if default is None:\n            raise\n        else:\n            return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):",
+          "prompt_tokens": 250,
+          "gen_tokens": 127,
+          "prefill_tps": 315.55168058091806,
+          "gen_tps": 33.33611492151144,
+          "load_s": 0.074680292,
+          "wall_s": 4.72493866700097,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.41
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        if default is None:\n            raise\n        else:\n            return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):",
+          "prompt_tokens": 250,
+          "gen_tokens": 127,
+          "prefill_tps": 314.08271541181495,
+          "gen_tps": 33.571380325314394,
+          "load_s": 0.073425875,
+          "wall_s": 4.704020749995834,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.41
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        if default is None:\n            raise\n        else:\n            return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):",
+          "prompt_tokens": 250,
+          "gen_tokens": 127,
+          "prefill_tps": 315.91056732574305,
+          "gen_tps": 33.912593732716786,
+          "load_s": 0.075937541,
+          "wall_s": 4.660494750001817,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.41
+          }
+        },
+        {
+          "text": "```python\nimport json\n\ndef load_config(path, default=None):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        if default is None:\n            raise\n        else:\n            return default\n\ndef save_config(path, data):\n    with open(path, 'w') as f:\n        json.dump(data, f)\n\ndef validate(data):\n    return 'name' in data\n\ndef merge(a, b):",
+          "prompt_tokens": 250,
+          "gen_tokens": 127,
+          "prefill_tps": 314.9307405638061,
+          "gen_tps": 33.0081721856217,
+          "load_s": 0.071849875,
+          "wall_s": 4.763197209002101,
+          "retries": 0,
+          "truncated": false,
+          "score": {
+            "compiles": true,
+            "kept_untouched_fns": "4/4",
+            "all_preserved": true,
+            "did_the_edit": true,
+            "size_ratio": 1.41
+          }
+        }
+      ]
+    },
+    "t4": {
+      "granite4:3b-h": {
+        "4000": [
+          {
+            "text": "One example of a file mentioned in the list is `app.py`.",
+            "prompt_tokens": 1139,
+            "gen_tokens": 15,
+            "prefill_tps": 374.8855224192381,
+            "gen_tps": 35.097177802941516,
+            "load_s": 0.737841333,
+            "wall_s": 4.226076958999329,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example of a file mentioned in the list is `app.py`.",
+            "prompt_tokens": 1139,
+            "gen_tokens": 15,
+            "prefill_tps": 377.8649383729058,
+            "gen_tps": 35.04361066375671,
+            "load_s": 0.044266208,
+            "wall_s": 3.496250249998411,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example of a file mentioned in the list is `app.py`.",
+            "prompt_tokens": 1139,
+            "gen_tokens": 15,
+            "prefill_tps": 377.84602090478126,
+            "gen_tps": 34.964291342204646,
+            "load_s": 0.042463625,
+            "wall_s": 3.496341832993494,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ],
+        "16000": [
+          {
+            "text": "One example from the list is `coder_benchmark.py`.",
+            "prompt_tokens": 3783,
+            "gen_tokens": 13,
+            "prefill_tps": 375.29630040981436,
+            "gen_tps": 35.260891006315646,
+            "load_s": 0.045609791,
+            "wall_s": 10.510966917005135,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example from the list is `coder_benchmark.py`.",
+            "prompt_tokens": 3783,
+            "gen_tokens": 13,
+            "prefill_tps": 378.3124070958719,
+            "gen_tps": 35.58235065920465,
+            "load_s": 0.049236084,
+            "wall_s": 10.42909458399663,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example from the list is `coder_benchmark.py`.",
+            "prompt_tokens": 3783,
+            "gen_tokens": 13,
+            "prefill_tps": 378.50119075609155,
+            "gen_tps": 35.3351006718491,
+            "load_s": 0.044899375,
+            "wall_s": 10.42195395899762,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ],
+        "64000": [
+          {
+            "text": "One example of a file mentioned in the listing is **`app.py`**.",
+            "prompt_tokens": 14456,
+            "gen_tokens": 18,
+            "prefill_tps": 367.4857360572337,
+            "gen_tps": 32.888443501406094,
+            "load_s": 0.044532333,
+            "wall_s": 39.966892042000836,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example of a file mentioned in the listing is **`app.py`**.",
+            "prompt_tokens": 14456,
+            "gen_tokens": 18,
+            "prefill_tps": 368.75473795807517,
+            "gen_tps": 34.043368687106934,
+            "load_s": 0.042934042,
+            "wall_s": 39.818599874997744,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example of a file mentioned in the listing is **`app.py`**.",
+            "prompt_tokens": 14456,
+            "gen_tokens": 18,
+            "prefill_tps": 369.17196430616787,
+            "gen_tps": 34.20507728195396,
+            "load_s": 0.043192333,
+            "wall_s": 39.76164700000663,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ]
+      },
+      "qwen3:4b-instruct-2507-q4_K_M": {
+        "4000": [
+          {
+            "text": "`app.py`",
+            "prompt_tokens": 1171,
+            "gen_tokens": 5,
+            "prefill_tps": 382.5005820394745,
+            "gen_tps": 49.558495750978466,
+            "load_s": 7.889191208,
+            "wall_s": 11.338132084005338,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "`app.py`",
+            "prompt_tokens": 1171,
+            "gen_tokens": 5,
+            "prefill_tps": 421.92038540679715,
+            "gen_tps": 49.18421777606949,
+            "load_s": 0.244802458,
+            "wall_s": 3.1793517920013983,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "`coder_benchmark.py`",
+            "prompt_tokens": 1171,
+            "gen_tokens": 7,
+            "prefill_tps": 432.1195055829582,
+            "gen_tps": 45.744284106299446,
+            "load_s": 0.108239166,
+            "wall_s": 3.009833083000558,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ],
+        "16000": [
+          {
+            "text": "One file in the listing above is **coder_benchmark.py**.",
+            "prompt_tokens": 3838,
+            "gen_tokens": 15,
+            "prefill_tps": 350.7518160510903,
+            "gen_tps": 37.87156349551007,
+            "load_s": 0.100121417,
+            "wall_s": 11.494626583000354,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One file in the listing above is **coder_benchmark.py**.",
+            "prompt_tokens": 3838,
+            "gen_tokens": 15,
+            "prefill_tps": 373.41956017390845,
+            "gen_tps": 38.33113485961149,
+            "load_s": 0.121031875,
+            "wall_s": 10.857456958001421,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One file in the listing above is **coder_benchmark.py**.",
+            "prompt_tokens": 3838,
+            "gen_tokens": 15,
+            "prefill_tps": 376.48257795730746,
+            "gen_tps": 36.63202298918309,
+            "load_s": 0.095769667,
+            "wall_s": 11.037603791999572,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ],
+        "64000": [
+          {
+            "text": "One file in the listing above is **`PROJECT_MIND.md`**.",
+            "prompt_tokens": 14764,
+            "gen_tokens": 17,
+            "prefill_tps": 239.8016787803208,
+            "gen_tps": 25.53958790639999,
+            "load_s": 0.272541167,
+            "wall_s": 62.69199108400062,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One file in the listing above is **`PROJECT_MIND.md`**.",
+            "prompt_tokens": 14764,
+            "gen_tokens": 17,
+            "prefill_tps": 240.95112977550477,
+            "gen_tps": 26.162763349354933,
+            "load_s": 0.0904625,
+            "wall_s": 62.12107320799987,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One file in the listing above is **`PROJECT_MIND.md`**.",
+            "prompt_tokens": 14764,
+            "gen_tokens": 17,
+            "prefill_tps": 241.24223952675865,
+            "gen_tps": 26.54095094575455,
+            "load_s": 0.128639584,
+            "wall_s": 62.046479082993756,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "corrections": [
+    {
+      "date": "2026-08-29",
+      "task": "t2",
+      "what": "First T2 run scored granite4:3b-h and llama-8b 0/5. The scorer held a hardcoded 7-tool allowlist while the prompt advertised 13; both models chose query_memory, a valid tool, and were marked invalid.",
+      "after": "All four models 5/5. Scorer now derives the valid set from the prompt itself."
+    }
+  ]
+}

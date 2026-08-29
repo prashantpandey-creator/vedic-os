@@ -12,7 +12,13 @@ CLAUDE_MEMORY_DIR = os.getenv("CLAUDE_MEMORY_DIR", os.path.expanduser("~/claude-
 ANTIGRAVITY_BRAIN_DIR = os.getenv("ANTIGRAVITY_BRAIN_DIR", os.path.expanduser("~/.gemini/antigravity/brain"))
 
 # Default Models (Users can override these in the UI, but these are the recommended defaults)
-FAST_MODEL = os.getenv("FAST_MODEL", "mannix/llama3.1-8b-abliterated:latest")
+# Drives the agent loop: reads the tool schema and emits the JSON action every
+# step. Was mannix/llama3.1-8b-abliterated, which scored 0/5 on valid tool
+# actions in benchmarks/RESULTS.md T2 while this 4B transformer scored 5/5 at
+# half the size and ~2x the generation speed.
+# NOTE: this is NOT an abliterated model. If you need the refusal-free model for
+# a task, set FAST_MODEL=mannix/llama3.1-8b-abliterated:latest in the env.
+FAST_MODEL = os.getenv("FAST_MODEL", "qwen3:4b-instruct-2507-q4_K_M")
 HEAVY_MODEL = os.getenv("HEAVY_MODEL", "qwen2.5:32b")
 
 # Model that reads the repo and writes the opening blueprint. Must be a GENERAL
@@ -24,3 +30,23 @@ INGEST_MODEL = os.getenv("INGEST_MODEL", "qwen3:4b-instruct-2507-q4_K_M")
 
 # Small model that performs whole-file rewrites for edit_file + instruction.
 EDITOR_MODEL = os.getenv("EDITOR_MODEL", "granite4:3b-h")
+
+# Model used for the episodic-memory vectors. MUST support /api/embeddings —
+# chat/instruct models answer "this model does not support embeddings", which is
+# what silently killed the RAG memory (it was pointed at INGEST_MODEL).
+# Verified working: granite4:3b-h (2048 dims), llama3.1:8b (4096 dims).
+EMBED_MODEL = os.getenv("EMBED_MODEL", "granite4:3b-h")
+
+# Cosine-similarity floor for episodic memory. The original 0.4 filtered nothing —
+# embeddings from a generative model cluster in a narrow 0.69-0.86 band, so
+# unrelated memories all passed. Lower this if you switch EMBED_MODEL to a real
+# embedder (nomic-embed-text, mxbai-embed-large), which separates properly.
+MEMORY_MIN_SIM = float(os.getenv("MEMORY_MIN_SIM", "0.80"))
+
+# Where the loop-detection escalation goes when ANTHROPIC_API_KEY is set. Must be
+# a litellm model id — "claude/claude-3-5-sonnet" (the old hardcoded value) is not
+# one: litellm's prefix is "anthropic/", not "claude/".
+ESCALATION_MODEL = os.getenv("ESCALATION_MODEL", "anthropic/claude-sonnet-4-5")
+
+# Vision model for visual_debug. Not pulled by default — `ollama pull llama3.2-vision`.
+VISION_MODEL = os.getenv("VISION_MODEL", "llama3.2-vision")

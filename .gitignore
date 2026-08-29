@@ -19,3 +19,8 @@ artifacts/
 WeatherDashboard/
 *.log
 node_modules/
+
+.omni_snapshot
+screenshot.js
+screenshot.png
+vyasa_memory_db.json

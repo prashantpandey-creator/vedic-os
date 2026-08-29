@@ -158,16 +158,17 @@ def parse_action(raw_response):
         return {"action": "error", "error": "Empty model response."}
     
     text = raw_response.strip()
-    
+
     # 1. Try markdown code fence first
     for fence in ["```json", "```"]:
         if fence in text:
-            try:
-                inner = text.split(fence)[1].split("```")[0].strip()
-                return orjson.loads(inner)
-            except Exception:
-                pass
-    
+            inner = text.split(fence)[1].split("```")[0].strip()
+            for candidate in (inner, _escape_raw_control_chars(inner)):
+                try:
+                    return orjson.loads(candidate)
+                except Exception:
+                    pass
+
     # 2. Brace-counting extractor — handles multiline JSON
     start = text.find("{")
     if start != -1:
@@ -189,15 +190,58 @@ def parse_action(raw_response):
                 elif ch == "}":
                     depth -= 1
                     if depth == 0:
-                        candidate = text[start:i+1]
-                        try:
-                            return orjson.loads(candidate)
-                        except Exception:
-                            # Try collapsing whitespace (fixes newlines inside string values)
+                        candidate = text[start:i + 1]
+                        for attempt in (candidate, _escape_raw_control_chars(candidate)):
                             try:
-                                collapsed = " ".join(candidate.split())
-                                return orjson.loads(collapsed)
+                                return orjson.loads(attempt)
                             except Exception:
-                                break
-    
+                                pass
+                        break
+
     return {"action": "error", "error": f"Could not parse JSON from: {text[:200]}"}
+
+
+def _escape_raw_control_chars(candidate):
+    """
+    Repair the one thing small models get wrong constantly: a literal newline
+    inside a JSON string value. Strict JSON forbids it, so orjson rejects the
+    whole block.
+
+    This REPLACES a `" ".join(candidate.split())` fallback that collapsed every
+    run of whitespace in the document. That turned
+
+        "search": "def add(a, b):
+            return a - b"
+
+    into "def add(a, b): return a - b" — newline and indentation gone. It could
+    never match indented Python, so every search/replace edit failed with
+    "Search block not found ... The model hallucinated the search text." The
+    model had not hallucinated; the parser had flattened its output and the error
+    blamed the model. Measured on the fix_bug acceptance task: 5 of 5 edits lost
+    this way, the target file left byte-identical.
+
+    Escaping instead of collapsing preserves the text exactly, which is the whole
+    point of a search block.
+    """
+    out = []
+    in_string = False
+    escape_next = False
+    for ch in candidate:
+        if escape_next:
+            out.append(ch)
+            escape_next = False
+            continue
+        if ch == "\\" and in_string:
+            out.append(ch)
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            out.append(ch)
+            continue
+        if in_string and ch in "\n\r\t\b\f":
+            out.append({"\n": "\\n", "\r": "\\r", "\t": "\\t",
+                        "\b": "\\b", "\f": "\\f"}[ch])
+            continue
+        out.append(ch)
+    return "".join(out)

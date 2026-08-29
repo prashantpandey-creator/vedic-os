@@ -4,7 +4,7 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from config import INGEST_MODEL, EDITOR_MODEL, FAST_MODEL
+from config import INGEST_MODEL, EDITOR_MODEL, FAST_MODEL, ESCALATION_MODEL
 
 from core.terminal_engine import TerminalEngine
 from core.tool_registry import ToolRegistry
@@ -102,7 +102,7 @@ async def agent_loop(websocket: WebSocket):
             if len(action_history) >= 3 and action_history[-1] == action_history[-2] == action_history[-3]:
                 if os.environ.get("ANTHROPIC_API_KEY"):
                     await websocket.send_json({"type": "status", "msg": "🚨 RECURSIVE LOOP DETECTED. ESCALATING TO CLAUDE..."})
-                    coder_model = "claude/claude-3-5-sonnet"
+                    coder_model = ESCALATION_MODEL
                     action_history.clear()
                     messages.append({"role": "user", "content": "SYSTEM ESCALATION: Your local Llama model got stuck in an infinite loop failing to execute the above tool. You are Claude 3.5 Sonnet. Read the tracebacks, break the loop, and solve the problem."})
                     step += 1
