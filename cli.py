@@ -93,7 +93,11 @@ def run_cli():
 
                 if not action_data or action_data.get("action") == "error":
                     console.print("[red]Malformed JSON from LLM. Retrying...[/red]")
-                    messages.append({"role": "user", "content": "Error: Your JSON block was malformed. Fix it."})
+                    err = data.get("gateway_error") if isinstance(data, dict) else None
+                    messages.append({"role": "user", "content":
+                        f"The model call itself failed ({err}). This is not your fault — "
+                        f"repeat your last action." if err else
+                        "Error: Your JSON block was malformed. Output exactly one ```json block."})
                     step += 1
                     continue
                     

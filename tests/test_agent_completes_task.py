@@ -182,7 +182,10 @@ def run_task(task_name, model, max_steps, verbose):
             said_done = True
             break
         if not action or action == "error":
-            messages.append({"role": "user", "content": "Your JSON was malformed. Output one ```json block."})
+            err = data.get("gateway_error")
+            messages.append({"role": "user", "content":
+                f"The model call itself failed ({err}). Not your fault — repeat your last action."
+                if err else "Your JSON was malformed. Output exactly one ```json block."})
             continue
         if action == "ask_user":
             messages.append({"role": "user", "content": "No human is available. Decide yourself and continue."})
