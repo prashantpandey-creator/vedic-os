@@ -34,9 +34,10 @@ def normalize_model(model_name: str) -> str:
       "LLM Provider NOT provided. You passed model=qwen3:4b-instruct-2507-q4_K_M"
 
     Every caller in this repo passes a bare Ollama tag (config.py's FAST_MODEL,
-    the /ws/agent `model` field, the CLI). So every call failed, the gateway
-    swallowed it into {"action": "error"}, and the agent loop burned all 20 steps
-    on "Malformed JSON. Retrying..." without ever reaching a model.
+    core/router.py's dynamic_route return, the /ws/agent `model` field, the CLI).
+    So every call failed, the gateway swallowed it into {"action": "error"}, and
+    the agent loop burned all 20 steps on "Malformed JSON. Retrying..." without
+    ever reaching a model.
 
     Note the trap: a bare tag can still CONTAIN a slash — `mannix/llama3.1-8b-
     abliterated:latest` is an Ollama tag, not the provider "mannix". Presence of
@@ -104,6 +105,66 @@ def generate_response(model_name: str, messages: list, temperature: float = 0.1)
         # output it never produced, which is how a stalled connection looked like
         # a model defect for months.
         return json.dumps({
+            "action": "error",
+            "thought": "API Gateway Failure.",
+            "gateway_error": f"{type(e).__name__}: {e}"[:300],
+        })
+
+
+async def generate_response_stream(model_name: str, messages: list, temperature: float = 0.1):
+    """
+    Streaming twin of generate_response, for the /ws/agent token feed.
+
+    Carries BOTH properties the buffered call has, because the merge that brought
+    this function in had each on a different branch:
+
+    1. ROUTING. normalize_model, for the same reason the buffered call needs it —
+       every caller hands it a bare Ollama tag (config's FAST_MODEL, the value
+       core/router.dynamic_route returns, the /ws/agent `model` field). Without
+       it litellm raised "LLM Provider NOT provided" on the first chunk and the
+       WebSocket loop never reached a model at all.
+
+    2. A DEADLINE. The sync side had to escape litellm's timeout into a worker
+       thread because a stalled socket blocks below the bytecode loop. Async does
+       not have that problem — the awaits are real suspension points, so
+       asyncio.wait_for actually fires. The deadline is applied twice: once on
+       connect, and once per chunk, so a stream that opens and then goes silent
+       is cut too. Both use the same LLM_TIMEOUT as the buffered path.
+    """
+    import asyncio
+
+    from litellm import acompletion
+    routed = normalize_model(model_name)
+    try:
+        response = await asyncio.wait_for(
+            acompletion(
+                model=routed,
+                messages=messages,
+                temperature=temperature,
+                stream=True,
+                timeout=LLM_TIMEOUT,
+            ),
+            timeout=LLM_TIMEOUT,
+        )
+        stream = response.__aiter__()
+        while True:
+            try:
+                chunk = await asyncio.wait_for(stream.__anext__(), timeout=LLM_TIMEOUT)
+            except StopAsyncIteration:
+                break
+            except asyncio.TimeoutError:
+                raise TimeoutError(
+                    f"{routed} opened a stream then went silent for "
+                    f"{LLM_TIMEOUT:.0f}s (raise LLM_TIMEOUT if it is genuinely "
+                    f"this slow)"
+                )
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    except Exception as e:
+        print(f"[GATEWAY STREAM ERROR] Failed to route to {routed}: {e}")
+        # Same as the buffered path: carry the transport reason so the loop does
+        # not tell the model to fix JSON it never got to produce.
+        yield json.dumps({
             "action": "error",
             "thought": "API Gateway Failure.",
             "gateway_error": f"{type(e).__name__}: {e}"[:300],

@@ -64,9 +64,22 @@ async def agent_loop(websocket: WebSocket):
         
         while step <= max_steps:
             messages = enforce_context_window(messages, max_turns=6)
-            await websocket.send_json({"type": "status", "msg": f"⏳ Llama is Thinking (Step {step})..."})
             
-            raw_response = generate_next_thought(coder_model, messages, step_placeholder=None)
+            # DYNAMIC ROUTING
+            from core.router import dynamic_route
+            routed_model = dynamic_route(messages)
+            if routed_model != coder_model:
+                await websocket.send_json({"type": "status", "msg": f"🔄 Dynamic Router switching to {routed_model} for complex task..."})
+                coder_model = routed_model
+                
+            await websocket.send_json({"type": "status", "msg": f"⏳ Llama is Thinking (Step {step}) via {coder_model}..."})
+            
+            from core.llm_gateway import generate_response_stream
+            raw_response = ""
+            async for chunk in generate_response_stream(coder_model, messages):
+                raw_response += chunk
+                await websocket.send_json({"type": "token", "msg": chunk})
+            
             messages.append({"role": "assistant", "content": raw_response})
             await websocket.send_json({"type": "thought", "msg": raw_response})
             
@@ -124,6 +137,27 @@ async def agent_loop(websocket: WebSocket):
     except Exception as e:
         print(f"Agent Loop Error: {e}")
         await websocket.send_json({"type": "error", "msg": str(e)})
+
+import asyncio
+
+async def background_cron_agent():
+    """
+    Wakes up periodically to check for broken tests, linting errors, or 
+    hygiene tasks, and spawns a headless agent loop to fix them autonomously.
+    """
+    while True:
+        await asyncio.sleep(1800)  # Sleep for 30 minutes
+        print("[CRON] Waking up Omni-Agent for background project hygiene...")
+        try:
+            # Here it would invoke the agent_loop headlessly.
+            # We simulate the hook for now.
+            pass
+        except Exception as e:
+            print(f"[CRON ERROR] {e}")
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(background_cron_agent())
 
 if __name__ == "__main__":
     import uvicorn
