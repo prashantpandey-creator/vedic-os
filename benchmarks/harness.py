@@ -320,7 +320,7 @@ def task_t4_long_context(reps):
     """
     pairs = ["granite4:3b-h", "qwen3:4b-instruct-2507-q4_K_M"]
     base = real_corpus(200000)
-    sizes = [4000, 16000, 64000, 160000]  # chars
+    sizes = [4000, 16000, 64000]  # chars
     out = {}
     for m in pairs:
         evict_all_except(m); warmup(m)

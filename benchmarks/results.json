@@ -33,7 +33,12 @@
       "parent": null
     }
   },
-  "reps": 5,
+  "reps": {
+    "t1": 5,
+    "t2": 5,
+    "t3": 5,
+    "t4": 3
+  },
   "results": {
     "t1": {
       "granite4:3b-h": [
@@ -1064,6 +1069,276 @@
           }
         }
       ]
+    },
+    "t4": {
+      "granite4:3b-h": {
+        "4000": [
+          {
+            "text": "One example of a file mentioned in the list is `app.py`.",
+            "prompt_tokens": 1139,
+            "gen_tokens": 15,
+            "prefill_tps": 374.8855224192381,
+            "gen_tps": 35.097177802941516,
+            "load_s": 0.737841333,
+            "wall_s": 4.226076958999329,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example of a file mentioned in the list is `app.py`.",
+            "prompt_tokens": 1139,
+            "gen_tokens": 15,
+            "prefill_tps": 377.8649383729058,
+            "gen_tps": 35.04361066375671,
+            "load_s": 0.044266208,
+            "wall_s": 3.496250249998411,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example of a file mentioned in the list is `app.py`.",
+            "prompt_tokens": 1139,
+            "gen_tokens": 15,
+            "prefill_tps": 377.84602090478126,
+            "gen_tps": 34.964291342204646,
+            "load_s": 0.042463625,
+            "wall_s": 3.496341832993494,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ],
+        "16000": [
+          {
+            "text": "One example from the list is `coder_benchmark.py`.",
+            "prompt_tokens": 3783,
+            "gen_tokens": 13,
+            "prefill_tps": 375.29630040981436,
+            "gen_tps": 35.260891006315646,
+            "load_s": 0.045609791,
+            "wall_s": 10.510966917005135,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example from the list is `coder_benchmark.py`.",
+            "prompt_tokens": 3783,
+            "gen_tokens": 13,
+            "prefill_tps": 378.3124070958719,
+            "gen_tps": 35.58235065920465,
+            "load_s": 0.049236084,
+            "wall_s": 10.42909458399663,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example from the list is `coder_benchmark.py`.",
+            "prompt_tokens": 3783,
+            "gen_tokens": 13,
+            "prefill_tps": 378.50119075609155,
+            "gen_tps": 35.3351006718491,
+            "load_s": 0.044899375,
+            "wall_s": 10.42195395899762,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ],
+        "64000": [
+          {
+            "text": "One example of a file mentioned in the listing is **`app.py`**.",
+            "prompt_tokens": 14456,
+            "gen_tokens": 18,
+            "prefill_tps": 367.4857360572337,
+            "gen_tps": 32.888443501406094,
+            "load_s": 0.044532333,
+            "wall_s": 39.966892042000836,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example of a file mentioned in the listing is **`app.py`**.",
+            "prompt_tokens": 14456,
+            "gen_tokens": 18,
+            "prefill_tps": 368.75473795807517,
+            "gen_tps": 34.043368687106934,
+            "load_s": 0.042934042,
+            "wall_s": 39.818599874997744,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One example of a file mentioned in the listing is **`app.py`**.",
+            "prompt_tokens": 14456,
+            "gen_tokens": 18,
+            "prefill_tps": 369.17196430616787,
+            "gen_tps": 34.20507728195396,
+            "load_s": 0.043192333,
+            "wall_s": 39.76164700000663,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ]
+      },
+      "qwen3:4b-instruct-2507-q4_K_M": {
+        "4000": [
+          {
+            "text": "`app.py`",
+            "prompt_tokens": 1171,
+            "gen_tokens": 5,
+            "prefill_tps": 382.5005820394745,
+            "gen_tps": 49.558495750978466,
+            "load_s": 7.889191208,
+            "wall_s": 11.338132084005338,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "`app.py`",
+            "prompt_tokens": 1171,
+            "gen_tokens": 5,
+            "prefill_tps": 421.92038540679715,
+            "gen_tps": 49.18421777606949,
+            "load_s": 0.244802458,
+            "wall_s": 3.1793517920013983,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "`coder_benchmark.py`",
+            "prompt_tokens": 1171,
+            "gen_tokens": 7,
+            "prefill_tps": 432.1195055829582,
+            "gen_tps": 45.744284106299446,
+            "load_s": 0.108239166,
+            "wall_s": 3.009833083000558,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ],
+        "16000": [
+          {
+            "text": "One file in the listing above is **coder_benchmark.py**.",
+            "prompt_tokens": 3838,
+            "gen_tokens": 15,
+            "prefill_tps": 350.7518160510903,
+            "gen_tps": 37.87156349551007,
+            "load_s": 0.100121417,
+            "wall_s": 11.494626583000354,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One file in the listing above is **coder_benchmark.py**.",
+            "prompt_tokens": 3838,
+            "gen_tokens": 15,
+            "prefill_tps": 373.41956017390845,
+            "gen_tps": 38.33113485961149,
+            "load_s": 0.121031875,
+            "wall_s": 10.857456958001421,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One file in the listing above is **coder_benchmark.py**.",
+            "prompt_tokens": 3838,
+            "gen_tokens": 15,
+            "prefill_tps": 376.48257795730746,
+            "gen_tps": 36.63202298918309,
+            "load_s": 0.095769667,
+            "wall_s": 11.037603791999572,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ],
+        "64000": [
+          {
+            "text": "One file in the listing above is **`PROJECT_MIND.md`**.",
+            "prompt_tokens": 14764,
+            "gen_tokens": 17,
+            "prefill_tps": 239.8016787803208,
+            "gen_tps": 25.53958790639999,
+            "load_s": 0.272541167,
+            "wall_s": 62.69199108400062,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One file in the listing above is **`PROJECT_MIND.md`**.",
+            "prompt_tokens": 14764,
+            "gen_tokens": 17,
+            "prefill_tps": 240.95112977550477,
+            "gen_tps": 26.162763349354933,
+            "load_s": 0.0904625,
+            "wall_s": 62.12107320799987,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          },
+          {
+            "text": "One file in the listing above is **`PROJECT_MIND.md`**.",
+            "prompt_tokens": 14764,
+            "gen_tokens": 17,
+            "prefill_tps": 241.24223952675865,
+            "gen_tps": 26.54095094575455,
+            "load_s": 0.128639584,
+            "wall_s": 62.046479082993756,
+            "retries": 0,
+            "truncated": false,
+            "score": {
+              "answered": true
+            }
+          }
+        ]
+      }
     }
   }
 }
