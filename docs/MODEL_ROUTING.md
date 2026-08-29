@@ -72,38 +72,87 @@ transformer's code. The naming has been lying about the routing.
 
 ## Plan (not applied)
 
-1. **Swap the routing.** `INGEST_MODEL = granite4:3b-h`. One line in `config.py`.
-   Expect ~2.8× faster blueprints at ~half the memory on any repo above ~20K tokens.
-2. **Raise `num_ctx` to 32768** and stop clipping the repo. With the SSM the memory
-   cost of the larger window is affordable; with the transformer it is not.
-3. **Fix `max_chars` overshoot** — check the budget *before* appending a file, not
-   after.
-4. **Move the `🐍 Mamba` label** onto whichever model is actually the SSM, or drop it.
-5. **Decide `EDITOR_MODEL` after the deferred test below.** Do not move it on a hunch
-   — see the open question.
+> **Revised 2026-08-29 after running the models on real tasks.** An earlier draft
+> of this section said "swap `INGEST_MODEL` to granite4:3b-h". That was wrong, and
+> it was wrong in an interesting way: the throughput measurement was right, but I
+> had never checked whether the blueprint the model produces is *usable*. It isn't
+> — from either architecture. See "The blueprint is worthless from both" below.
+> Do not make a model faster at a job that shouldn't exist.
+
+1. **Delete the LLM blueprint. Do not re-route it.** The deterministic file tree
+   (`build_tree_with_hints`, already shipped) is what actually tells the agent
+   what exists. Removing the model call saves **87–109s and 17,703 tokens of
+   prefill every session** and removes the last reason `num_ctx` and `max_chars`
+   matter here. This is the whole of items 2 and 3 below, by subtraction.
+2. ~~Raise `num_ctx` to 32768~~ — moot once the model call is gone. If the LLM
+   orientation summary is kept anyway, it must be raised: the ingest is 17,703
+   tokens against a hardcoded 16,000, silently dropping ~1,703.
+3. ~~Fix `max_chars` overshoot~~ — same; only matters if the ingest survives.
+   (`max_chars=60000` produced 78,675 chars: the budget is checked after
+   appending a file, not before.)
+4. **Move or drop the `🐍 Mamba` label.** It sits on the transformer's path.
+5. **Leave `EDITOR_MODEL = granite4:3b-h` where it is.** Settled below — the SSM
+   ties the transformer on real edits, so there is no reason to move it, and it is
+   the cheaper model to keep resident.
 6. **`HEAVY_MODEL` (qwen2.5:32b) is referenced by nothing.** Either wire it as the
    escalation target for the loop-detection path (currently escalates to a Claude
    API model that requires a key, and otherwise just gives up) or delete the config
    entry. Leaving a 20 GB model configured but unreachable is the worst of both.
 
-## Open question — DO NOT claim this is settled
+## Settled: the SSM does NOT pay a copy-fidelity penalty
 
-Whole-file rewrite is a **verbatim copy** task, and exact recall from long context
-is the known weak spot of state-space models — it is what attention is for. If the
-SSM degrades on long files, `EDITOR_MODEL = granite4:3b-h` is the wrong choice even
-though it is the right *architecture* for long input.
+The worry was that whole-file rewrite is a verbatim copy task — attention's
+strength, an SSM's known weak spot — so `EDITOR_MODEL = granite4:3b-h` might be
+wrong even though the architecture suits long input.
 
-Measured so far:
+Measured on six real files, real instructions ("add a docstring to X"), scored by
+whether `write_verified` would accept the result and whether the target function
+survived:
 
-| file | lines | granite4:3b-h | qwen3:4b |
+| file | lines | granite4:3b-h (SSM) | qwen3:4b (transformer) |
 |---|---|---|---|
-| core/memory_graph.py | 27 | 100% kept, accepted | 100% kept, accepted |
-| core/checkpoint.py | 65 | 100% kept, accepted | 100% kept, accepted |
-| core/tool_registry.py | 306 | **crashed** | **crashed** |
+| core/memory_graph.py | 27 | 100% kept, ACCEPT, 14s | 100% kept, ACCEPT, 20s |
+| core/checkpoint.py | 65 | 100% kept, ACCEPT, 30s | 100% kept, ACCEPT, 41s |
+| core/ollama_api.py | 57 | 96% kept, ACCEPT, 49s | 100% kept, ACCEPT, 36s |
+| core/terminal_engine.py | 125 | 100% kept, ACCEPT, 112s | 98% kept, ACCEPT, 53s |
+| core/file_system.py | 144 | **23% — REJECT truncated 1778/6441** | 100% kept, ACCEPT, 89s |
+| core/tool_registry.py | 306 | 99% kept, ACCEPT, 212s | **13% — REJECT truncated 2980/16104** |
+| | | **5/6 usable** | **5/6 usable** |
 
-The 306-line run killed the Ollama connection for *both* models — the long-context
-benchmark was running concurrently and the box ran out of memory. That row is
-**inconclusive, not a failure**. Nobody has measured copy fidelity above 65 lines.
+Dead tie. And there is **no length curve**: granite fails at 144 lines and
+succeeds at 306; qwen3 does the reverse. Both truncate sometimes; neither
+truncates predictably. The architecture hypothesis is not supported — this is
+run-to-run variance in small quantised models, not attention vs. state-space.
 
-Re-run `tests/bench_ssm_vs_transformer.py` on an idle machine before touching
-`EDITOR_MODEL`.
+Two useful consequences:
+
+- `EDITOR_MODEL` stays. The SSM costs less memory to hold resident and performs
+  the same.
+- **`write_verified` caught both failures** — its first live catches on real model
+  output. Before it existed, both of those runs would have written a truncated
+  file straight over the original.
+
+## The blueprint is worthless from both — this is the real finding
+
+Both models were given the actual repo ingest (17.7K tokens) and the actual
+blueprint prompt, then scored on how many of five real filenames from this
+codebase they cited:
+
+| model | wall | real filenames cited |
+|---|---|---|
+| granite4:3b-h | 87s | **0 / 5** |
+| qwen3:4b | 109s | **0 / 5** |
+
+granite described "dynamic system-prompt injection pulling tool schemas from
+ToolRegistry" — which is a paraphrase of `PROJECT_MIND.md`, the memory file, not a
+reading of the code. qwen3 cited `app.py`, `config.py` and `launch.sh`; the third
+does not exist in this repo.
+
+So the section of the system prompt headed *"use this to understand WHAT files
+exist"* was being filled, at a cost of ~100 seconds and 17.7K tokens per session,
+by a model that names files that aren't there. Swapping in a faster model buys a
+faster wrong answer.
+
+The deterministic file tree already replaces it and cannot be wrong. Delete the
+model call.
+

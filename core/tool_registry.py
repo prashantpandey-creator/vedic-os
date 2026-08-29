@@ -203,24 +203,64 @@ Available Tools (Choose ONE per response):
 
 
     def _ask_the_council(self, action_data):
+        """
+        Second-opinion review before an edit runs.
+
+        Measured 2026-08-29: the original version rejected 5 of 8 obviously-valid
+        edits (62%). It was shown only the JSON fragment — no file — and asked
+        whether the edit "contains hallucinations". It cannot check whether the
+        search text exists without the file, so a 4B model answered the
+        unanswerable question with a flat 'REJECT'.
+
+        Two changes: the reviewer now SEES the file, so the question is
+        answerable; and it must name a specific reason to block, because a
+        review that cannot say what is wrong is not a review. Anything
+        ambiguous approves — matching the existing behaviour when the reviewer
+        is unreachable.
+
+        Note this is a second line only. The deterministic checks catch the
+        cases this was built for and catch them exactly: apply_search_replace
+        raises when the search text is not in the file ("the model hallucinated
+        the search text"), and write_verified reverts on syntax error and
+        rejects truncation.
+        """
         import requests
         from config import INGEST_MODEL
         print(f"🏛️ Calling The Council ({INGEST_MODEL}) for Peer Review...")
-        
+
         try:
+            filepath = action_data.get("file", "")
+            try:
+                with open(os.path.join(self.workspace_dir, filepath), "r", encoding="utf-8") as f:
+                    current = f.read()[:8000]
+            except Exception:
+                current = "(file not readable — judge the edit on its own terms)"
+
             prompt = (
-                "You are the Devil's Advocate Code Reviewer. A junior agent has proposed the following file modification:\n"
-                f"```json\n{json.dumps(action_data, indent=2)}\n```\n\n"
-                "Does this code contain obvious hallucinations, syntax errors, or destructive behavior?\n"
-                "Respond with EXACTLY ONE WORD: 'APPROVE' or 'REJECT'."
+                "You are a code reviewer. Approve unless something is definitely wrong.\n\n"
+                f"FILE: {filepath}\n```\n{current}\n```\n\n"
+                f"PROPOSED EDIT:\n```json\n{json.dumps(action_data, indent=2)}\n```\n\n"
+                "Block ONLY if one of these is definitely true:\n"
+                "  - the 'search' text does not appear in the file above\n"
+                "  - the 'replace' text has a clear syntax error\n"
+                "  - the edit deletes or destroys unrelated code\n\n"
+                "Small, ordinary changes (renames, constants, comments, added arguments, "
+                "docstrings) are NORMAL — approve them.\n"
+                "Reply 'APPROVE', or 'REJECT: <the specific reason>'."
             )
             res = requests.post(
                 f"{OLLAMA_URL}/api/chat",
-                json={"model": INGEST_MODEL, "messages": [{"role": "user", "content": prompt}], "stream": False, "options": {"temperature": 0.0}},
-                timeout=30
+                json={"model": INGEST_MODEL, "messages": [{"role": "user", "content": prompt}],
+                      "stream": False, "options": {"temperature": 0.0}},
+                timeout=30,
             ).json()
-            answer = res.get("message", {}).get("content", "").strip().upper()
-            if "REJECT" in answer:
+            answer = res.get("message", {}).get("content", "").strip()
+
+            # Must be an explicit, reasoned rejection. A bare "REJECT", or the word
+            # appearing anywhere in prose, is not enough to destroy a valid edit.
+            head = answer.upper().lstrip("*_# ").split("\n")[0]
+            if head.startswith("REJECT") and len(answer.split(":", 1)[-1].strip()) > 12:
+                print(f"🏛️ Council blocked it: {answer[:160]}")
                 return False
             return True
         except Exception as e:
