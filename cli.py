@@ -1,3 +1,4 @@
+from config import INGEST_MODEL, EDITOR_MODEL, FAST_MODEL
 import os
 import sys
 import json
@@ -22,8 +23,8 @@ def run_cli():
     console.print(Panel.fit("[bold blue]Vedic Omni-Agent CLI[/bold blue]\n[dim]Local AI Developer Tool (Claude Code Clone)[/dim]", border_style="blue"))
     
     workspace = os.getcwd()
-    coder_model = "mannix/llama3.1-8b-abliterated:latest"
-    editor_model = "granite4:3b-h"
+    coder_model = FAST_MODEL
+    editor_model = EDITOR_MODEL
     
     # Initialize tools
     terminal = TerminalEngine(workspace_dir=workspace)
@@ -31,7 +32,7 @@ def run_cli():
     
     # Pre-clear VRAM
     with console.status("[dim]Allocating VRAM...[/dim]"):
-        clear_all_vram_except([coder_model, editor_model, "qwen2.5:0.5b"])
+        clear_all_vram_except([coder_model, editor_model, INGEST_MODEL])
     
     history = FileHistory(os.path.join(workspace, ".omni_history"))
     messages = []
@@ -48,7 +49,7 @@ def run_cli():
             # Bootstrap if first time
             if not messages:
                 with console.status("[dim]Scanning Repository...[/dim]"):
-                    messages, blueprint = init_omni_loop(user_intent, "qwen2.5:0.5b", coder_model, workspace, None)
+                    messages, blueprint = init_omni_loop(user_intent, INGEST_MODEL, coder_model, workspace, None)
                     console.print(Panel(Markdown(blueprint), title="Blueprint", border_style="cyan"))
             else:
                 messages.append({"role": "user", "content": user_intent})
@@ -68,7 +69,9 @@ def run_cli():
                 
                 # --- HYBRID ESCALATION (CRY FOR HELP PROTOCOL) ---
                 import json
-                current_action_str = json.dumps(action_data, sort_keys=True)
+                # Remove thought from loop detection so minor text changes don't bypass the guard
+                action_data_no_thought = {k: v for k, v in action_data.items() if k != 'thought'}
+                current_action_str = json.dumps(action_data_no_thought, sort_keys=True)
                 if 'action_history' not in locals():
                     action_history = []
                 action_history.append(current_action_str)
@@ -112,43 +115,13 @@ def run_cli():
                 tool_str = json.dumps({k:v for k,v in action_data.items() if k not in ["thought", "action"]}, indent=2)
                 console.print(Panel(tool_str, title=f"🛠️ Tool: {action}", border_style="purple"))
                 
-                # Multi-Agent Routing for Edit
-                if action == "edit_file" and "instruction" in action_data:
-                    filepath = os.path.join(workspace, action_data["file"])
-                    instruction = action_data["instruction"]
-                    
-                    with console.status(f"[bold cyan]Granite is editing {action_data['file']}...[/bold cyan]"):
-                        try:
-                            import requests, re
-                            with open(filepath, "r") as f:
-                                current_code = f.read()
-                            
-                            prompt_str = f"Instruction: {instruction}\n\nCURRENT CODE:\n```\n{current_code}\n```\n\nRewrite the code to fulfill the instruction. Output ONLY the complete updated code inside ``` blocks."
-                            res = requests.post("http://127.0.0.1:11434/api/chat", json={
-                                "model": editor_model,
-                                "messages": [{"role": "user", "content": prompt_str}],
-                                "stream": False
-                            }).json()
-                            granite_output = res.get("message", {}).get("content", "")
-                            
-                            def extract_code(text):
-                                match = re.search(r'```[a-zA-Z]*\n(.*?)\n```', text, re.DOTALL)
-                                if match: return match.group(1)
-                                match = re.search(r'```(.*?)```', text, re.DOTALL)
-                                if match: return match.group(1).strip()
-                                return text
-                                
-                            fixed_code = extract_code(granite_output)
-                            with open(filepath, "w") as f:
-                                f.write(fixed_code)
-                            msg = f"Granite successfully updated {filepath}"
-                        except Exception as e:
-                            msg = f"Granite failed to edit file: {e}"
-                else:
-                    with console.status("[dim]Executing...[/dim]"):
-                        tool_result = registry.execute_tool(action_data)
-                        msg = tool_result.get("msg", str(tool_result))
-                
+                # All tools — including the editor-model rewrite — go through the
+                # registry, which routes every write through write_verified().
+                with console.status("[dim]Executing...[/dim]"):
+                    tool_result = registry.execute_tool(action_data, main_model=coder_model)
+                    msg = tool_result.get("msg", str(tool_result))
+
+
                 # Render the result
                 console.print(f"[dim]Output:[/dim]\n[green]{msg}[/green]")
                 messages.append({"role": "user", "content": f"Tool Execution Result:\n```\n{msg}\n```"})

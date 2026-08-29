@@ -6,7 +6,7 @@ import subprocess
 import streamlit as st
 from core.terminal_engine import TerminalEngine
 from core.ollama_api import OLLAMA_URL, evict_model
-from core.file_system import ingest_repository_to_text, apply_search_replace
+from core.file_system import ingest_repository_to_text, apply_search_replace, build_tree_with_hints
 from core.memory_graph import read_compressed_memory, append_vritti
 from core.tool_registry import ToolRegistry
 
@@ -38,21 +38,39 @@ def init_omni_loop(intent_prompt, meditate_model, coder_model, workspace_dir="."
         for line in res.iter_lines():
             if line:
                 chunk = orjson.loads(line)
+                # Ollama reports a missing model as a 200 with an {"error": ...} line.
+                # This used to fall through the "message" check silently, leaving the
+                # blueprint empty and the agent blind about which files exist.
+                if "error" in chunk:
+                    raise RuntimeError(f"Ollama rejected model '{meditate_model}': {chunk['error']}")
                 if "message" in chunk and "content" in chunk["message"]:
                     blueprint += chunk["message"]["content"]
                     if status_container:
-                        status_container.markdown(f"**🐍 Mamba is writing Blueprint:**\n{blueprint}▌")
+                        status_container.markdown(f"**🐍 Writing Blueprint:**\n{blueprint}▌")
+        if not blueprint.strip():
+            raise RuntimeError(f"model '{meditate_model}' returned an empty blueprint")
         if status_container:
-            status_container.success(f"**🐍 Mamba Blueprint Complete!**\n{blueprint}")
+            status_container.success(f"**🐍 Blueprint Complete!**\n{blueprint}")
     except Exception as e:
-        blueprint = f"Failed to ingest: {e}"
+        # Loud, and loud INSIDE the system prompt — the agent must know it is blind.
+        blueprint = (
+            f"[BLUEPRINT UNAVAILABLE: {e}]\n"
+            f"You do NOT have a summary of this codebase. Do not guess at file paths. "
+            f"Start by running a command such as `ls -R` or `rg --files` to discover "
+            f"what actually exists before editing anything."
+        )
+        print(f"[BLUEPRINT] ⚠️  {e}")
         if status_container:
             status_container.error(blueprint)
-        
+
     evict_model(meditate_model)
     
     memory = read_compressed_memory(workspace_dir)
-    
+
+    # Ground truth about what exists. Deterministic — no model, so it cannot come
+    # back empty or invented the way the LLM blueprint could.
+    file_tree = build_tree_with_hints(intent_prompt, workspace_dir)
+
     registry = ToolRegistry(workspace_dir, None)
     system = f"""You are the Vedic Omni-Agent. You have native Zsh terminal access to this Mac.
 
@@ -63,9 +81,14 @@ The following is historical context, user preferences, and past conversational m
 {memory}
 
 =========================================
-2. CURRENT CODEBASE BLUEPRINT (State)
+2. FILES ON DISK (ground truth — read this before naming any path)
 =========================================
-The following is the real-time structure of the Git repository/codebase as it exists on the hard drive right now. Use this to understand WHAT files exist.
+Every file in the workspace right now. If a path is not in this list, it does not exist.
+{file_tree}
+
+=========================================
+3. ORIENTATION (a model's read of the codebase — may be wrong, the list above is not)
+=========================================
 {blueprint}
 =========================================
 
@@ -81,11 +104,39 @@ Finally, after your critique, output your chosen action strictly inside a ```jso
         {"role": "user", "content": intent_prompt}
     ]
     
-    subprocess.run(["git", "init"], cwd=workspace_dir, capture_output=True)
-    subprocess.run(["git", "add", "."], cwd=workspace_dir, capture_output=True)
-    subprocess.run(["git", "commit", "-m", f"Omni-Agent Checkpoint: {intent_prompt}"], cwd=workspace_dir, capture_output=True)
-    
+    _warn_if_workspace_unprotected(workspace_dir)
+
     return messages, blueprint
+
+
+def _warn_if_workspace_unprotected(workspace_dir):
+    """
+    Report whether the agent's edits will be recoverable. Warn only — never write.
+
+    This replaces an unconditional `git init && git add . && git commit`, which
+    created repos inside directories that had none and committed whatever was
+    already sitting uncommitted in the tree — including work belonging to someone
+    else. This repo's own log still carries 11 "Omni-Agent Checkpoint:" commits
+    whose messages are pasted LeetCode problems.
+    """
+    inside = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"],
+                            cwd=workspace_dir, capture_output=True, text=True)
+    if inside.returncode != 0:
+        print(f"[CHECKPOINT] ⚠️  {workspace_dir} is not a git repo. Agent edits will "
+              f"NOT be recoverable. `git init && git commit` first if you care about them.")
+        return None
+
+    head = subprocess.run(["git", "rev-parse", "HEAD"],
+                          cwd=workspace_dir, capture_output=True, text=True).stdout.strip()
+    dirty = subprocess.run(["git", "status", "--porcelain"],
+                           cwd=workspace_dir, capture_output=True, text=True).stdout.strip()
+    if dirty:
+        print(f"[CHECKPOINT] ⚠️  Working tree has {len(dirty.splitlines())} uncommitted "
+              f"change(s). Those are NOT checkpointed — the agent's edits will mix into "
+              f"them. Commit or stash first to keep the two separable.")
+    print(f"[CHECKPOINT] Pre-agent HEAD is {head[:8]}. Undo everything with: "
+          f"git diff {head[:8]}  /  git checkout {head[:8]} -- .")
+    return head
 
 def generate_next_thought(coder_model, messages, step_placeholder):
     from core.llm_gateway import generate_response
