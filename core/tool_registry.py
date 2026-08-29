@@ -76,7 +76,12 @@ Available Tools (Choose ONE per response):
         if action == "run_command":
             cmd = action_data.get("command", "")
             output = self.terminal.execute(cmd)
-            return {"type": "command", "cmd": cmd, "output": output, "msg": f"Command Executed.\\nOutput:\\n```\\n{output}\\n```"}
+            # \n, not \\n. The escaped version emitted a literal backslash-n, so
+            # every command result reached the model as one unbroken line with a
+            # code fence that never opened:
+            #   Command Executed.\nOutput:\n```\ntotal 3
+            return {"type": "command", "cmd": cmd, "output": output,
+                    "msg": f"Command Executed.\nOutput:\n```\n{output}\n```"}
             
         elif action == "query_memory":
             res = query_memory(action_data.get("query", ""))
