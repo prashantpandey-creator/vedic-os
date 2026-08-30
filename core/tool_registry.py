@@ -25,6 +25,9 @@ class ToolRegistry:
     def __init__(self, workspace_dir, terminal_engine):
         self.workspace_dir = workspace_dir
         self.terminal = terminal_engine
+        # Files this agent wrote during the run. A 'done' may not be verified
+        # against any of them — see check_done.
+        self.authored_files = set()
         
     def get_system_prompt_addition(self):
         return """
@@ -68,12 +71,34 @@ Available Tools (Choose ONE per response):
 
 13. done (Finish the job. You MUST supply 'verified_by': the exact shell command
 that proves the work — a test run, a build, whatever the task's success actually
-is. That command is RE-RUN before done is accepted; if it exits non-zero the done
-is refused and you keep working, so there is nothing to gain by claiming early.
-Verifying is a run_command like any other — there is no 'execute_test' tool. Once
-your check passes, emit done on the next turn rather than looking for more work.)
+is. It is RE-RUN before done is accepted; non-zero exit refuses the done and you
+keep working, so there is nothing to gain by claiming early. The command must
+verify against a file that ALREADY EXISTED — naming a test you wrote or edited
+this run is refused, because a check you authored only proves you agree with
+yourself. Verifying is a run_command like any other; there is no 'execute_test'
+tool. Once your check passes, emit done next turn rather than looking for more
+work.)
 {"thought": "...", "action": "done", "verified_by": "python3 -m unittest test_calc"}
 """
+
+    def _authored_in(self, cmd):
+        """
+        Which files the agent wrote this run does `cmd` name? Empty set is clean.
+
+        Matches the basename ("test_calc.py") and the bare stem as a WHOLE token
+        ("test_calc", as `python3 -m unittest test_calc` writes it). Whole-token
+        on purpose: editing `strings.py` must not veto `python3 -m unittest
+        test_strings`, and it does not — `_` is a word character, so \bstrings\b
+        finds no boundary inside "test_strings".
+        """
+        hits = set()
+        for path in self.authored_files:
+            base = os.path.basename(path)
+            stem = os.path.splitext(base)[0]
+            if re.search(rf"(?<![\w./-]){re.escape(base)}(?![\w])", cmd) or \
+               re.search(rf"\b{re.escape(stem)}\b", cmd):
+                hits.add(path)
+        return hits
 
     def check_done(self, action_data):
         """
@@ -94,6 +119,23 @@ your check passes, emit done on the next turn rather than looking for more work.
             return False, ("done REFUSED: no 'verified_by'. Supply the exact shell "
                            "command that proves the work — the test run, the build, "
                            "whatever success actually is — then emit done again.")
+
+        # PROVENANCE. Re-running the agent's own command was not enough: measured
+        # over 40 tasks, the gate stopped nothing (6 false dones with it, 6
+        # without). Every single one of those six worked the same way — the agent
+        # ran create_file to write its own test, named that file in verified_by,
+        # and the gate accepted a genuine exit 0 against a check the agent had
+        # authored. A test you wrote yourself is a restatement of your belief, not
+        # evidence for it.
+        self_authored = self._authored_in(cmd)
+        if self_authored:
+            return False, (
+                f"done REFUSED: '{cmd}' verifies against {', '.join(sorted(self_authored))}, "
+                f"which you wrote during this run. A check you authored proves only "
+                f"that you agree with yourself. Verify with something that already "
+                f"existed — the project's own tests, its build, its linter."
+            )
+
         if self.terminal is None:
             return True, "done accepted (no terminal available to verify)."
 
@@ -158,6 +200,7 @@ your check passes, emit done on the next turn rather than looking for more work.
                 if os.path.exists(full_path):
                     os.remove(full_path)
                 return {"type": "error", "msg": f"create_file failed: {e}"}
+            self.authored_files.add(filepath)
             return {"type": "edit", "file": filepath, "diff": "File created.", "msg": f"File {filepath} created successfully."}
         elif action == "edit_file":
             filepath = action_data.get("file")
@@ -170,6 +213,7 @@ your check passes, emit done on the next turn rather than looking for more work.
                     diff_str = self._rewrite_file_with_editor_model(filepath, action_data["instruction"])
                 else:
                     return {"type": "error", "msg": "edit_file needs either 'search'+'replace' or 'instruction'."}
+                self.authored_files.add(filepath)
                 return {"type": "edit", "file": filepath, "diff": diff_str, "msg": f"File {filepath} edited successfully.\nDiff:\n```diff\n{diff_str[:2000]}\n```"}
             except Exception as e:
                 return {"type": "error", "msg": f"Edit failed: {e}"}
