@@ -93,7 +93,7 @@ def run_cli():
 
                 if not action_data or action_data.get("action") == "error":
                     console.print("[red]Malformed JSON from LLM. Retrying...[/red]")
-                    err = data.get("gateway_error") if isinstance(data, dict) else None
+                    err = action_data.get("gateway_error") if isinstance(action_data, dict) else None
                     messages.append({"role": "user", "content":
                         f"The model call itself failed ({err}). This is not your fault — "
                         f"repeat your last action." if err else
@@ -108,8 +108,14 @@ def run_cli():
                 console.print(f"\n[dim italic]🤔 {thought}[/dim italic]")
                 
                 if action == "done":
-                    console.print("[bold green]✅ Task Complete.[/bold green]")
-                    break
+                    accepted, done_msg = registry.check_done(action_data)
+                    if accepted:
+                        console.print(f"[bold green]✅ Task Complete.[/bold green] [dim]{done_msg}[/dim]")
+                        break
+                    console.print(f"[bold yellow]↩ {done_msg}[/bold yellow]")
+                    messages.append({"role": "user", "content": done_msg})
+                    step += 1
+                    continue
                     
                 if action == "ask_user":
                     console.print(f"[bold magenta]❓ Question:[/bold magenta] {action_data.get('question')}")

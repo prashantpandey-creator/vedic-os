@@ -117,8 +117,14 @@ async def agent_loop(websocket: WebSocket):
             await websocket.send_json({"type": "action", "action": action, "args": action_data})
             
             if action == "done":
-                await websocket.send_json({"type": "status", "msg": "✅ Task Complete!"})
-                break
+                accepted, done_msg = registry.check_done(action_data)
+                if accepted:
+                    await websocket.send_json({"type": "status", "msg": f"✅ Task Complete! {done_msg}"})
+                    break
+                await websocket.send_json({"type": "status", "msg": f"↩ {done_msg}"})
+                messages.append({"role": "user", "content": done_msg})
+                step += 1
+                continue
             
             # All tools — including the editor-model rewrite — go through the
             # registry, which routes every write through write_verified().

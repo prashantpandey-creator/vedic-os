@@ -7,6 +7,9 @@ class TerminalEngine:
     def __init__(self, workspace_dir="."):
         self.cwd = os.path.abspath(workspace_dir)
         self.background_processes = {}
+        # None until a real command has run and produced an exit code. Blocked,
+        # cd-only and daemon commands leave it None on purpose — they prove nothing.
+        self.last_returncode = None
         
         # Blocked commands. THIS IS A DENY-LIST, NOT A SANDBOX — it stops the
         # obvious ways an agent wrecks a machine, and a determined command can
@@ -91,6 +94,10 @@ class TerminalEngine:
                 cmd, shell=True, cwd=self.cwd,
                 capture_output=True, text=True, timeout=60, errors="replace"
             )
+            # Kept so a caller can ask whether the last command actually SUCCEEDED.
+            # execute() returns prose, and prose cannot be judged: "FAILED (failures=1)"
+            # and "OK" are both just text. The done-gate needs the exit code.
+            self.last_returncode = result.returncode
             output = result.stdout + "\n" + result.stderr
             output = output.strip()
             

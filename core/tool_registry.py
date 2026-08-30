@@ -66,9 +66,49 @@ Available Tools (Choose ONE per response):
 12. visual_debug (Take a screenshot of the Next.js localhost and use Llama Vision to critique the layout and find CSS bugs)
 {"thought": "...", "action": "visual_debug", "url": "http://localhost:3000"}
 
-13. done
-{"thought": "...", "action": "done"}
+13. done (Finish the job. You MUST supply 'verified_by': the exact shell command
+that proves the work — a test run, a build, whatever the task's success actually
+is. That command is RE-RUN before done is accepted; if it exits non-zero the done
+is refused and you keep working, so there is nothing to gain by claiming early.
+Verifying is a run_command like any other — there is no 'execute_test' tool. Once
+your check passes, emit done on the next turn rather than looking for more work.)
+{"thought": "...", "action": "done", "verified_by": "python3 -m unittest test_calc"}
 """
+
+    def check_done(self, action_data):
+        """
+        Decide whether a 'done' is real. Returns (accepted: bool, msg: str).
+
+        Both loops used to `break` on done unconditionally, which made stopping a
+        matter of the model's opinion. Measured both ways it fails: with no
+        guidance the agent ran 12/12 steps past a passing verifier and never
+        declared; told plainly to stop when finished, it declared at step 4 with
+        the verifier still red. Encouragement cannot fix a self-report — the loop
+        has to check.
+
+        So done carries the command that proves it, and we re-run that command.
+        The agent cannot pass by asserting; it can only pass by being right.
+        """
+        cmd = (action_data.get("verified_by") or "").strip()
+        if not cmd:
+            return False, ("done REFUSED: no 'verified_by'. Supply the exact shell "
+                           "command that proves the work — the test run, the build, "
+                           "whatever success actually is — then emit done again.")
+        if self.terminal is None:
+            return True, "done accepted (no terminal available to verify)."
+
+        self.terminal.last_returncode = None
+        output = self.terminal.execute(cmd)
+        code = self.terminal.last_returncode
+        if code is None:
+            return False, (f"done REFUSED: '{cmd}' produced no exit code — it was "
+                           f"blocked, or it is a 'cd'/daemon command, so it proves "
+                           f"nothing. Give a command that actually runs the check.\n"
+                           f"{output}")
+        if code != 0:
+            return False, (f"done REFUSED: '{cmd}' exited {code}, so the job is not "
+                           f"finished. Keep working.\nOutput:\n```\n{output}\n```")
+        return True, f"done accepted: '{cmd}' passed (exit 0)."
 
     def execute_tool(self, action_data, fast_model=FAST_MODEL, main_model=None):
         action = action_data.get("action")
