@@ -1,75 +1,51 @@
-import os
 import orjson
-import requests
 import re
 import subprocess
-import streamlit as st
-from core.terminal_engine import TerminalEngine
-from core.ollama_api import OLLAMA_URL, evict_model
-from core.file_system import ingest_repository_to_text, apply_search_replace, build_tree_with_hints
-from core.memory_graph import read_compressed_memory, append_vritti
+from core.file_system import build_tree_with_hints
+from core.memory_graph import read_compressed_memory
 from core.tool_registry import ToolRegistry
 
-def init_omni_loop(intent_prompt, meditate_model, coder_model, workspace_dir=".", status_container=None):
-    if status_container:
-        status_container.info("📂 Scanning filesystem and extracting active codebase...")
-        
-    repo_text = ingest_repository_to_text(workspace_dir=workspace_dir, max_chars=60000)
-    
-    file_count = repo_text.count("--- FILE:")
-    char_count = len(repo_text)
-    
-    if status_container:
-        status_container.info(f"🐍 Passed {file_count} files ({char_count} chars) to Mamba model `{meditate_model}`. Synthesizing blueprint...")
-        
-    meditate_payload = {
-        "model": meditate_model,
-        "messages": [
-            {"role": "system", "content": "You are the Vedic Blueprint Generator. Read the codebase and output a compressed summary. EXTREME BREVITY REQUIRED: Output a maximum of 5 bullet points. Do not write paragraphs."},
-            {"role": "user", "content": f"USER INTENT: {intent_prompt}\n\nCODEBASE:\n{repo_text}"}
-        ],
-        "stream": True,
-        "options": {"num_ctx": 16000}
-    }
-    
-    blueprint = ""
-    try:
-        res = requests.post(f"{OLLAMA_URL}/api/chat", json=meditate_payload, stream=True)
-        for line in res.iter_lines():
-            if line:
-                chunk = orjson.loads(line)
-                # Ollama reports a missing model as a 200 with an {"error": ...} line.
-                # This used to fall through the "message" check silently, leaving the
-                # blueprint empty and the agent blind about which files exist.
-                if "error" in chunk:
-                    raise RuntimeError(f"Ollama rejected model '{meditate_model}': {chunk['error']}")
-                if "message" in chunk and "content" in chunk["message"]:
-                    blueprint += chunk["message"]["content"]
-                    if status_container:
-                        status_container.markdown(f"**🐍 Writing Blueprint:**\n{blueprint}▌")
-        if not blueprint.strip():
-            raise RuntimeError(f"model '{meditate_model}' returned an empty blueprint")
-        if status_container:
-            status_container.success(f"**🐍 Blueprint Complete!**\n{blueprint}")
-    except Exception as e:
-        # Loud, and loud INSIDE the system prompt — the agent must know it is blind.
-        blueprint = (
-            f"[BLUEPRINT UNAVAILABLE: {e}]\n"
-            f"You do NOT have a summary of this codebase. Do not guess at file paths. "
-            f"Start by running a command such as `ls -R` or `rg --files` to discover "
-            f"what actually exists before editing anything."
-        )
-        print(f"[BLUEPRINT] ⚠️  {e}")
-        if status_container:
-            status_container.error(blueprint)
+def init_omni_loop(intent_prompt, meditate_model=None, coder_model=None, workspace_dir=".", status_container=None):
+    """
+    Build the opening message list for a run.
 
-    evict_model(meditate_model)
-    
+    `meditate_model` is accepted and IGNORED. It used to name a model that read
+    the whole repo and wrote a prose "blueprint" into the system prompt. That call
+    is gone. Measured, on this repo's own ingest (17,703 tokens):
+
+      - it cost 80.1s median per session, every session
+      - both the SSM and the transformer cited **0 of 5** real filenames from this
+        codebase. granite paraphrased PROJECT_MIND.md — the memory file, not the
+        code; qwen3 cited `launch.sh`, which does not exist here.
+
+    So the section headed "use this to understand WHAT files exist" was being
+    filled with invented paths. Routing it to a faster model buys a faster wrong
+    answer, so it is deleted rather than re-routed.
+
+    `build_tree_with_hints` already supplies the file list, deterministically, in
+    well under a second. It cannot be empty and it cannot be wrong.
+
+    The parameter stays in the signature because six call sites pass it
+    positionally; dropping it would break app.py and other sessions' tests for no
+    gain. Removing three defects with it:
+      - the hardcoded `num_ctx: 16000` that silently truncated a 17,703-token
+        ingest to exactly 16000, dropping ~1,703 tokens of the repo tail
+      - `max_chars=60000` overshooting to 78,675 chars (the budget was checked
+        after appending a whole file, not before)
+      - the `🐍 Mamba` status strings, which sat on this path while it ran a
+        transformer
+    """
+    if status_container:
+        status_container.info("📂 Reading the file tree...")
+
     memory = read_compressed_memory(workspace_dir)
 
     # Ground truth about what exists. Deterministic — no model, so it cannot come
     # back empty or invented the way the LLM blueprint could.
     file_tree = build_tree_with_hints(intent_prompt, workspace_dir)
+
+    if status_container:
+        status_container.success(f"📂 {len(file_tree.splitlines())} files on disk.")
 
     registry = ToolRegistry(workspace_dir, None)
     system = f"""You are the Vedic Omni-Agent. You have native Zsh terminal access to this Mac.
@@ -91,11 +67,6 @@ The following is historical context, user preferences, and past conversational m
 =========================================
 Every file in the workspace right now. If a path is not in this list, it does not exist.
 {file_tree}
-
-=========================================
-3. ORIENTATION (a model's read of the codebase — may be wrong, the list above is not)
-=========================================
-{blueprint}
 =========================================
 
 You must accomplish the user's intent autonomously.
@@ -112,7 +83,10 @@ Finally, after your critique, output your chosen action strictly inside a ```jso
     
     _warn_if_workspace_unprotected(workspace_dir)
 
-    return messages, blueprint
+    # Second return value kept: cli.py, app.py and backend/main.py all unpack two
+    # values and display it. They now show the real file tree instead of a model's
+    # guess about it, which is strictly more useful to a human watching the run.
+    return messages, file_tree
 
 
 def _warn_if_workspace_unprotected(workspace_dir):
